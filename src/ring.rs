@@ -7,10 +7,17 @@ use std::random::Random;
 
 pub trait Ring:
     Add<Output = Self>
+    + AddAssign
     + Mul<Output = Self>
+    + MulAssign
     + Neg<Output = Self>
     + Sub<Output = Self>
     + Div<Output = Self>
+    + for<'a> Add<&'a Self, Output = Self>
+    + for<'a> AddAssign<&'a Self>
+    + Sized
+    + for<'a> Mul<&'a Self, Output = Self>
+    + for<'a> MulAssign<&'a Self>
     + Sized
     + Clone
     + Copy

@@ -2,7 +2,7 @@ use crate::ring::Ring;
 use rand::RngCore;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
-use std::ops::{Add, Div, Mul, Neg, Sub};
+use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub};
 use std::random::{Random, RandomSource};
 
 //
@@ -69,11 +69,23 @@ impl Add for Fq {
     }
 }
 
+impl AddAssign for Fq {
+    fn add_assign(&mut self, rhs: Self) {
+        self.value = (self.value + rhs.value) % Self::MODULUS;
+    }
+}
+
 impl Mul for Fq {
     type Output = Self;
 
     fn mul(self, rhs: Self) -> Self::Output {
         Self::new(self.value * rhs.value)
+    }
+}
+
+impl MulAssign for Fq {
+    fn mul_assign(&mut self, rhs: Self) {
+        self.value = (self.value * rhs.value) % Self::MODULUS;
     }
 }
 
@@ -89,7 +101,6 @@ impl Neg for Fq {
         Self { value }
     }
 }
-
 impl Sub for Fq {
     type Output = Self;
 
@@ -98,7 +109,6 @@ impl Sub for Fq {
     }
 }
 
-// Division
 impl Div for Fq {
     type Output = Self;
 
@@ -111,6 +121,34 @@ impl Div for Fq {
             .expect("Divisor has no modular inverse");
 
         Self::new(self.value * inv)
+    }
+}
+
+impl<'a> Add<&'a Self> for Fq {
+    type Output = Self;
+
+    fn add(self, rhs: &'a Self) -> Self::Output {
+        Self::new(self.value + rhs.value)
+    }
+}
+
+impl<'a> AddAssign<&'a Self> for Fq {
+    fn add_assign(&mut self, rhs: &'a Self) {
+        self.value = (self.value + rhs.value) % Self::MODULUS;
+    }
+}
+
+impl<'a> Mul<&'a Self> for Fq {
+    type Output = Self;
+
+    fn mul(self, rhs: &'a Self) -> Self::Output {
+        Self::new(self.value * rhs.value)
+    }
+}
+
+impl<'a> MulAssign<&'a Self> for Fq {
+    fn mul_assign(&mut self, rhs: &'a Self) {
+        self.value = (self.value * rhs.value) % Self::MODULUS;
     }
 }
 
@@ -146,6 +184,32 @@ mod tests {
         assert_eq!(Fq::new(8), Fq::new(5) + Fq::new(3)); // 13 mod 17 = 13
         assert_eq!(Fq::new(15), Fq::new(7) + Fq::new(8)); // 15 mod 17 = 15
         assert_eq!(Fq::new(1), Fq::new(9) + Fq::new(9)); // 18 mod 17 = 1
+    }
+
+    #[test]
+    fn test_fq_add_assign() {
+        let mut a = Fq::new(5);
+        let b = Fq::new(3);
+        a += b;
+        assert_eq!(a, Fq::new(8));
+
+        let mut c = Fq::new(15);
+        let d = Fq::new(5);
+        c += d;
+        assert_eq!(c, Fq::new(3)); // (15 + 5) % 17 = 3
+    }
+
+    #[test]
+    fn test_fq_mul_assign() {
+        let mut a = Fq::new(5);
+        let b = Fq::new(3);
+        a *= b;
+        assert_eq!(a, Fq::new(15));
+
+        let mut c = Fq::new(15);
+        let d = Fq::new(5);
+        c *= d;
+        assert_eq!(c, Fq::new(75)); // (15 + 5) % 17 = 3
     }
 
     #[test]
