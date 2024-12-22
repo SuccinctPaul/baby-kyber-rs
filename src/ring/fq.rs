@@ -2,7 +2,7 @@ use crate::ring::Ring;
 use rand::RngCore;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
-use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub};
+use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub, SubAssign};
 use std::random::{Random, RandomSource};
 
 //
@@ -18,7 +18,6 @@ impl Fq {
             value: value % Self::MODULUS,
         }
     }
-
     // Helper function to calculate modular multiplicative inverse
     // The Extended Euclidean Algorithm to find the modular multiplicative inverse of a modulo m.
     // Here's a breakdown:
@@ -59,8 +58,34 @@ impl Ring for Fq {
     fn one() -> Self {
         Self::new(1)
     }
-}
+    fn square(&self) -> Self {
+        let squared_value = (self.value as u128 * self.value as u128) % Self::MODULUS as u128;
+        Self::new(squared_value as u64)
+    }
+    fn pow(&self, power: u64) -> Self {
+        let mut base = self.clone();
+        let mut result = Self::one();
+        let mut exponent = power;
 
+        while exponent > 0 {
+            let local_base = base.clone();
+            if exponent & 1 == 1 {
+                result *= &local_base;
+            }
+            base = local_base.square();
+            exponent >>= 1;
+        }
+
+        result
+    }
+}
+impl From<u64> for Fq {
+    fn from(value: u64) -> Self {
+        Self {
+            value: value % Self::MODULUS,
+        }
+    }
+}
 impl Add for Fq {
     type Output = Self;
 
@@ -75,6 +100,10 @@ impl AddAssign for Fq {
     }
 }
 
+// TODO:
+//  - Implement Barrett reduction algorithm
+//      https://www.nayuki.io/page/barrett-reduction-algorithm
+//  - Implement Montgomery reduction algorithm
 impl Mul for Fq {
     type Output = Self;
 
@@ -106,6 +135,12 @@ impl Sub for Fq {
 
     fn sub(self, rhs: Self) -> Self::Output {
         Self::new(self.value + Self::MODULUS - rhs.value)
+    }
+}
+
+impl SubAssign for Fq {
+    fn sub_assign(&mut self, rhs: Self) {
+        self.value = (self.value - rhs.value) % Self::MODULUS;
     }
 }
 
@@ -302,5 +337,27 @@ mod tests {
         let serde = serde_json::to_string(&lhs).unwrap();
         let rhs = serde_json::from_str::<Fq>(&serde).unwrap();
         assert_eq!(lhs, rhs);
+    }
+    #[test]
+    fn test_fq_pow() {
+        // Test x^0 = 1 for any x
+        assert_eq!(Fq::new(5).pow(0), Fq::one());
+        assert_eq!(Fq::new(0).pow(0), Fq::one());
+
+        // Test x^1 = x for any x
+        assert_eq!(Fq::new(7).pow(1), Fq::new(7));
+
+        // Test 0^x = 0 for x > 0
+        assert_eq!(Fq::new(0).pow(5), Fq::zero());
+
+        // Test some specific cases
+        assert_eq!(Fq::new(2).pow(3), Fq::new(8)); // 2^3 = 8
+        assert_eq!(Fq::new(3).pow(4), Fq::new(81)); // 3^4 = 81
+
+        // Test a larger exponent
+        assert_eq!(Fq::new(2).pow(10), Fq::new(1024)); // 2^10 = 1024
+
+        // Test with modulus (assuming MODULUS = 17)
+        assert_eq!(Fq::new(3).pow(16), Fq::one()); // 3^16 ≡ 1 (mod 17) by Fermat's Little Theorem
     }
 }

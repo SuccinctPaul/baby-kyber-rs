@@ -2,7 +2,7 @@ pub mod fq;
 
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
-use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub};
+use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub, SubAssign};
 use std::random::Random;
 
 pub trait Ring:
@@ -12,6 +12,7 @@ pub trait Ring:
     + MulAssign
     + Neg<Output = Self>
     + Sub<Output = Self>
+    + SubAssign
     + Div<Output = Self>
     + for<'a> Add<&'a Self, Output = Self>
     + for<'a> AddAssign<&'a Self>
@@ -27,10 +28,16 @@ pub trait Ring:
     + Ord
     + PartialOrd
     + Random
+    + From<u64>
+    + Send
+    + Sync
 {
     const MODULUS: u64;
 
     fn rand(rng: &mut impl rand::RngCore) -> Self;
     fn zero() -> Self;
     fn one() -> Self;
+    fn square(&self) -> Self;
+    /// Computes self^exponent using exponentiation by squaring
+    fn pow(&self, power: u64) -> Self;
 }
