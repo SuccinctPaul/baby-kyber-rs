@@ -2,10 +2,10 @@ use crate::ring::Ring;
 use rand::RngCore;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
+use std::fmt::*;
 use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub, SubAssign};
 use std::random::{Random, RandomSource};
 
-//
 #[derive(Debug, Copy, Clone, PartialEq, Ord, PartialOrd, Eq, Serialize, Deserialize)]
 pub struct Fq {
     value: u64,
@@ -187,6 +187,18 @@ impl<'a> MulAssign<&'a Self> for Fq {
     }
 }
 
+// impl ToString for Fq {
+//     fn to_string(&self) -> String {
+//         format!("{}", self.value)
+//     }
+// }
+
+impl Display for Fq {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        write!(f, "{}", self.value)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -198,6 +210,15 @@ mod tests {
         assert_eq!(Fq::one(), Fq::new(1));
     }
 
+    #[test]
+    fn test_fq_to_string_and_display() {
+        let mut rng = DefaultRandomSource::default();
+        let lhs = Fq::random(&mut rng);
+        let str = lhs.to_string();
+        println!("{:?}", lhs);
+        println!("{}", lhs);
+        println!("to_string: {:?}", str);
+    }
     #[test]
     fn test_random_fq() {
         let mut rng = DefaultRandomSource::default();

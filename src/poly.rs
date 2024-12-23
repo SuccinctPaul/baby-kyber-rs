@@ -1,7 +1,7 @@
-use std::fmt::Debug;
+use std::fmt::{Debug, Display};
 use std::ops::{Add, AddAssign, Mul, MulAssign, Sub, SubAssign};
 
-mod ring_poly;
+pub mod ring_poly;
 
 pub trait Polynomial:
     Add<Output = Self>
@@ -13,8 +13,12 @@ pub trait Polynomial:
     + Sub<Output = Self>
     + for<'a> Sub<&'a Self, Output = Self>
     + SubAssign
+    + Sized
     + Clone
     + Debug
+    + PartialEq
+    + Eq
+    + Display
 {
     type Coefficient: Clone + Debug;
 
@@ -22,6 +26,10 @@ pub trait Polynomial:
     // const MODULE: Self;
 
     const MODULUS: Vec<Self::Coefficient>;
+
+    fn rand(rng: &mut impl rand::RngCore, n: usize) -> Self;
+    /// Remove leading zero coefficients
+    fn normalize(&mut self);
 
     /// Create a zero polynomial
     fn zero() -> Self;
@@ -39,7 +47,7 @@ pub trait Polynomial:
     fn set_coefficient(&mut self, i: usize, value: Self::Coefficient);
 
     /// Evaluate the polynomial at a given point
-    fn evaluate(&self, x: Self::Coefficient) -> Self::Coefficient;
+    fn evaluate(&self, x: &Self::Coefficient) -> Self::Coefficient;
 
     /// Create a polynomial from a list of coefficients
     fn from_coefficients(coeffs: Vec<Self::Coefficient>) -> Self;

@@ -1,16 +1,16 @@
-mod ring_matrix;
+//! https://matrixcalc.org/ helps a lot.
+pub mod poly_matrix;
+pub mod ring_matrix;
+pub mod vector_arithmatic;
 
 use std::ops::{Add, Mul, Neg, Sub};
 
 pub trait Matrix<T>: Sized + Clone + Add + Sub + Mul
 where
-    T: Clone + Add + Mul + Sub + Neg + Copy + PartialEq + Eq + PartialOrd + Ord,
+    T: Clone + Add + Mul + Sub + PartialEq + Eq,
 {
     /// Create a new matrix with the given number of rows and columns
     fn new(rows: usize, cols: usize) -> Self;
-
-    /// Create a random matrix with the given number of rows and columns
-    fn rand(rng: &mut impl rand::RngCore, rows: usize, cols: usize) -> Self;
 
     /// Get the number of rows in the matrix
     fn rows(&self) -> usize;

@@ -1,7 +1,7 @@
 pub mod fq;
 
 use serde::{Deserialize, Serialize};
-use std::fmt::Debug;
+use std::fmt::{Debug, Display};
 use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub, SubAssign};
 use std::random::Random;
 
@@ -31,6 +31,8 @@ pub trait Ring:
     + From<u64>
     + Send
     + Sync
+    // + ToString
+    + Display
 {
     const MODULUS: u64;
 

@@ -1,5 +1,6 @@
 use crate::poly::Polynomial;
-use std::fmt::{Debug, Formatter};
+use std::fmt;
+use std::fmt::{Debug, Display, Formatter};
 
 use crate::ring::Ring;
 use std::ops::{Add, AddAssign, Mul, MulAssign, Sub, SubAssign};
@@ -8,32 +9,23 @@ use rayon::{current_num_threads, scope};
 
 // p(x) = = a_0 + a_1 * X + ... + a_n * X^(n-1)
 //
+//
 // coeffs: [a_0, a_1, ..., a_n]
+//         (  0,   1,   ..., n)
 // basis: X^[n-1]
-#[derive(Debug, Clone, Eq, PartialEq)]
+//
+// It's Little Endian.
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub struct RingPolynomial<R: Ring> {
-    pub(crate) coeffs: Vec<R>,
+    coeffs: Vec<R>,
 }
 
 impl<R: Ring> RingPolynomial<R> {
-    // Constructor
+    // Constructor with normalize
     pub fn new(coeffs: Vec<R>) -> Self {
         let mut poly = Self { coeffs };
         poly.normalize();
         poly
-    }
-
-    // Remove leading zero coefficients
-    fn normalize(&mut self) {
-        while self.coeffs.len() > 1 && self.coeffs.last() == Some(&R::zero()) {
-            self.coeffs.pop();
-        }
-    }
-
-    pub fn rand(rng: &mut impl rand::RngCore, k: usize) -> Self {
-        let n = 1 << k;
-        let coeffs = (0..n).map(|_| R::rand(rng)).collect::<Vec<_>>();
-        Self::from_coefficients(coeffs)
     }
 
     fn scalar_mul(self, rhs: &R) -> Self {
@@ -42,7 +34,7 @@ impl<R: Ring> RingPolynomial<R> {
         } else {
             self.coeffs.iter().map(|c| c.mul(rhs)).collect::<Vec<R>>()
         };
-        Self { coeffs }
+        Self::new(coeffs)
     }
 
     // p(x)=∑y_j⋅L_j(X), where
@@ -146,6 +138,18 @@ impl<R: Ring> Polynomial for RingPolynomial<R> {
     // TODO: all
     const MODULUS: Vec<Self::Coefficient> = vec![];
 
+    fn rand(rng: &mut impl rand::RngCore, n: usize) -> Self {
+        let coeffs = (0..n).map(|_| R::rand(rng)).collect::<Vec<_>>();
+        Self::from_coefficients(coeffs)
+    }
+
+    // Remove leading zero coefficients
+    fn normalize(&mut self) {
+        while self.coeffs.len() > 1 && self.coeffs.last() == Some(&R::zero()) {
+            self.coeffs.pop();
+        }
+    }
+
     fn zero() -> Self {
         Self {
             coeffs: vec![R::zero()],
@@ -166,15 +170,16 @@ impl<R: Ring> Polynomial for RingPolynomial<R> {
     fn set_coefficient(&mut self, i: usize, value: Self::Coefficient) {
         assert!(self.degree() >= i, "Index out of bounds");
         self.coeffs[i] = value;
+        self.normalize();
     }
 
     // This evaluates a polynomial (in coefficient form) at `x`.
-    fn evaluate(&self, x: Self::Coefficient) -> Self::Coefficient {
+    fn evaluate(&self, x: &Self::Coefficient) -> Self::Coefficient {
         let coeffs = self.coeffs.clone();
         let poly_size = self.coeffs.len();
 
         // p(x) = = a_0 + a_1 * X + ... + a_n * X^(n-1), revert it and fold sum it
-        fn eval<R: Ring>(poly: &[R], point: R) -> R {
+        fn eval<R: Ring>(poly: &[R], point: &R) -> R {
             poly.iter()
                 .rev()
                 .fold(R::one(), |acc, coeff| acc * point + coeff)
@@ -203,7 +208,7 @@ impl<R: Ring> Polynomial for RingPolynomial<R> {
     }
 
     fn from_coefficients(coeffs: Vec<Self::Coefficient>) -> Self {
-        Self { coeffs }
+        Self::new(coeffs)
     }
 
     fn coefficients(&self) -> Vec<Self::Coefficient> {
@@ -212,9 +217,7 @@ impl<R: Ring> Polynomial for RingPolynomial<R> {
 
     fn negate(&self) -> Self {
         let negated_coeffs = self.coeffs.iter().map(|c| -c.clone()).collect();
-        Self {
-            coeffs: negated_coeffs,
-        }
+        Self::new(negated_coeffs)
     }
 
     fn derivative(&self) -> Self {
@@ -284,7 +287,7 @@ impl<R: Ring> Add for RingPolynomial<R> {
                 }
             })
             .collect::<Vec<R>>();
-        Self::Output { coeffs }
+        Self::new(coeffs)
     }
 }
 
@@ -311,7 +314,7 @@ impl<'a, R: Ring> Add<&'a Self> for RingPolynomial<R> {
                 }
             })
             .collect::<Vec<R>>();
-        Self::Output { coeffs }
+        Self::new(coeffs)
     }
 }
 
@@ -324,7 +327,7 @@ impl<R: Ring> std::ops::Mul for RingPolynomial<R> {
                 coeffs[n + m] += self.coeffs[n] * rhs.coeffs[m];
             }
         }
-        Self::Output { coeffs }
+        Self::new(coeffs)
     }
 }
 impl<'a, R: Ring> Mul<&'a Self> for RingPolynomial<R> {
@@ -336,7 +339,7 @@ impl<'a, R: Ring> Mul<&'a Self> for RingPolynomial<R> {
                 coeffs[n + m] += self.coeffs[n] * rhs.coeffs[m];
             }
         }
-        Self::Output { coeffs }
+        Self::new(coeffs)
     }
 }
 
@@ -415,11 +418,92 @@ impl<'a, R: Ring> SubAssign<&'a Self> for RingPolynomial<R> {
     }
 }
 
+// impl<R: Ring> ToString for RingPolynomial<R> {
+//     fn to_string(&self) -> String {
+//         let mut string = String::new();
+//         if self.coeffs.is_empty() || (self.coeffs.len() == 1 && self.coeffs[0] == R::zero()) {
+//             return "0".to_string();
+//         }
+//
+//         let mut first = true;
+//         for (i, coeff) in self.coeffs.iter().enumerate().rev() {
+//             if *coeff != R::zero() {
+//                 if !first {
+//                     string.push_str(" + ");
+//                 }
+//                 first = false;
+//                 let coeff_string = if *coeff == R::one() {
+//                     "".to_string()
+//                 } else {
+//                     coeff.to_string()
+//                 };
+//                 match i {
+//                     0 => string.push_str(&format!("{}", coeff_string)),
+//                     1 => string.push_str(&format!("{}x", coeff_string)),
+//                     _ => string.push_str(&format!("{}x^{}", coeff_string, i)),
+//                 }
+//             }
+//         }
+//         string
+//     }
+// }
+
+impl<R: Ring + Display> Display for RingPolynomial<R> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        if self.coeffs.is_empty() || (self.coeffs.len() == 1 && self.coeffs[0] == R::zero()) {
+            return write!(f, "0");
+        }
+
+        let mut first = true;
+        for (i, coeff) in self.coeffs.iter().enumerate().rev() {
+            if *coeff != R::zero() {
+                if !first {
+                    write!(f, " + ")?;
+                }
+                first = false;
+
+                match i {
+                    0 => write!(f, "{}", coeff)?,
+                    1 => {
+                        if *coeff == R::one() {
+                            write!(f, "x")?
+                        } else {
+                            write!(f, "{}x", coeff)?
+                        }
+                    }
+                    _ => {
+                        if *coeff == R::one() {
+                            write!(f, "x^{}", i)?
+                        } else {
+                            write!(f, "{}x^{}", coeff, i)?
+                        }
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::ring::fq::Fq;
     use std::ops::Neg;
+    #[test]
+    fn test_ring_polynomial_display() {
+        let poly =
+            RingPolynomial::from_coefficients(vec![Fq::new(3), Fq::new(0), Fq::new(2), Fq::new(1)]);
+        // assert_eq!(poly.to_string(), "x^3 + 2x^2 + 3");
+        println!("poly: {:?}", poly.to_string());
+        let zero_poly = RingPolynomial::<Fq>::zero();
+        // assert_eq!(zero_poly.to_string(), "0");
+        println!("zero_poly: {:?}", zero_poly.to_string());
+
+        let linear_poly = RingPolynomial::from_coefficients(vec![Fq::new(2), Fq::new(1)]);
+        // assert_eq!(linear_poly.to_string(), "1x + 2");
+        println!("linear_poly: {:?}", linear_poly.to_string());
+    }
 
     #[test]
     fn test_poly_addition() {
