@@ -1,5 +1,7 @@
+use crate::ring::Ring;
+use rand::RngCore;
 use std::fmt::{Debug, Display};
-use std::ops::{Add, AddAssign, Mul, MulAssign, Sub, SubAssign};
+use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub, SubAssign};
 
 pub mod ring_poly;
 
@@ -20,7 +22,7 @@ pub trait Polynomial:
     + Eq
     + Display
 {
-    type Coefficient: Clone + Debug;
+    type Coefficient: Ring;
 
     /// The modulus of the polynomial ring
     // const MODULE: Self;
@@ -72,4 +74,18 @@ pub trait Polynomial:
     //
     // /// Compute the extended Euclidean algorithm for polynomials
     // fn extended_gcd(a: &Self, b: &Self) -> (Self, Self, Self);
+}
+
+// a randomizer polynomial vector
+// These polynomial vectors are freshly generated for every encryption.
+pub fn random_poly_vector<P: Polynomial>(
+    rng: &mut impl RngCore,
+    dimension: usize,
+    degree: usize,
+) -> Vec<P> {
+    let mut s = vec![];
+    for _ in 0..dimension {
+        s.push(P::rand(rng, degree));
+    }
+    s
 }

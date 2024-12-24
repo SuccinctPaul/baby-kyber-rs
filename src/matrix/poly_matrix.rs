@@ -4,7 +4,7 @@ use crate::poly::Polynomial;
 use crate::ring::Ring;
 use std::ops::{Add, AddAssign, Div, Mul, Sub};
 
-/// This define `matrix` (rows * cols) （m × n）
+/// This defined `matrix` (rows * cols) （m × n）
 #[derive(Debug, Clone, Ord, PartialOrd, Eq, PartialEq)]
 pub struct PolyMatrix<P: Polynomial> {
     pub rows: usize,
@@ -49,6 +49,35 @@ impl<P: Polynomial> PolyMatrix<P> {
             .fold(P::zero(), |acc, x| acc + x);
         poly.normalize();
         poly
+    }
+    // Add between two vectors.
+    pub fn vec_add(a: &Vec<P>, b: &Vec<P>) -> Vec<P> {
+        assert_eq!(a.len(), b.len(), "Vectors must have the same length");
+
+        a.iter()
+            .zip(b.iter())
+            .map(|(ai, bi)| ai.clone() + bi.clone())
+            .collect::<Vec<_>>()
+    }
+    // Add between two vectors.
+    pub fn vec_sub(a: &Vec<P>, b: &Vec<P>) -> Vec<P> {
+        assert_eq!(a.len(), b.len(), "Vectors must have the same length");
+
+        a.iter()
+            .zip(b.iter())
+            .map(|(ai, bi)| ai.clone() - bi.clone())
+            .collect::<Vec<_>>()
+    }
+
+    // Mul between two vectors.
+    // It's a special case of matrix mul.
+    pub fn vec_mul(a: &Vec<P>, b: &Vec<P>) -> Vec<P> {
+        assert_eq!(a.len(), b.len(), "Vectors must have the same length");
+
+        a.iter()
+            .zip(b.iter())
+            .map(|(ai, bi)| ai.clone() * bi.clone())
+            .collect::<Vec<_>>()
     }
 
     /// https://en.wikipedia.org/wiki/Dot_product
