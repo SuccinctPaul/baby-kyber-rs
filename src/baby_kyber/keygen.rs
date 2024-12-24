@@ -3,20 +3,21 @@ use crate::matrix::poly_matrix::PolyMatrix;
 use crate::matrix::ring_matrix::RingMatrix;
 use crate::matrix::vector_arithmatic::VectorArithmatic;
 use crate::poly::ring_poly::RingPolynomial;
-use crate::poly::{Polynomial, random_poly_vector};
+use crate::poly::{Polynomial, small_poly_vector};
 use crate::ring::Ring;
 use rand::RngCore;
-use std::ops::Mul;
 
 // The private key of a Kyber key pair consists of polynomials with small coefficients
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub struct PrivateKey<P: Polynomial> {
-    pub s: Vec<P>,
+    pub s: PolyMatrix<P>,
 }
 
 impl<P: Polynomial> PrivateKey<P> {
     pub fn new(rng: &mut impl rand::RngCore, dimension: usize, degree: usize) -> Self {
-        let mut s = random_poly_vector(rng, dimension, degree);
+        let vec = small_poly_vector(rng, dimension, degree);
+        let s = PolyMatrix::from_vector_as_col(vec);
+        assert_eq!(s.cols, 1, "S.cols != 1");
         Self { s }
     }
 }
@@ -28,7 +29,7 @@ impl<P: Polynomial> PrivateKey<P> {
 pub struct PublickKey<P: Polynomial> {
     // It's a square matrix.
     pub A: PolyMatrix<P>,
-    pub t: Vec<P>,
+    pub t: PolyMatrix<P>,
 }
 impl<P: Polynomial> PublickKey<P> {
     pub fn from_private(
@@ -38,21 +39,23 @@ impl<P: Polynomial> PublickKey<P> {
         private_key: &PrivateKey<P>,
     ) -> Self {
         let A = Self::random_A(rng, dimension, degree);
-        let e = random_poly_vector(rng, dimension, degree);
+        let e = {
+            let vector = small_poly_vector(rng, dimension, degree);
+            PolyMatrix::from_vector_as_col(vector)
+        };
 
         // t= A*s + e
-        let t = PolyMatrix::vec_add(&A.mul_vector(&private_key.s), &e);
+        let A_s = A.mul_matrix(&private_key.s);
+
+        let t = A_s + e;
+        assert_eq!(t.cols, 1, "t.cols != 1");
         Self { A, t }
     }
 
-    // A=[
-    //      6x^3 + 16x^2 + 16x + 11, 9x^3 + 4x^2 + 6x + 3,
-    //      5x^3 + 3x^2 + 10x + 1,   6x^3 +  x^2 + 9x + 15,
-    //   ]
     pub fn random_A(rng: &mut impl RngCore, dimension: usize, degree: usize) -> PolyMatrix<P> {
         let mut values = vec![];
         for _ in 0..dimension {
-            values.push(random_poly_vector(rng, dimension, degree));
+            values.push(small_poly_vector(rng, dimension, degree));
         }
 
         PolyMatrix {
@@ -61,28 +64,4 @@ impl<P: Polynomial> PublickKey<P> {
             values,
         }
     }
-
-    // // To calculate `t`, needs an additional error vector `e`.
-    // // e = [x^2, x^2 - x]
-    // fn random_e(rng: &mut impl RngCore, dimension: usize, degree: usize) -> Vec<P> {
-    //     let mut s = vec![];
-    //     for _ in 0..dimension {
-    //         s.push(P::rand(rng, degree));
-    //     }
-    //     s
-    // }
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::baby_kyber::keygen::{PrivateKey, PublickKey};
-
-    // #[test]
-    // fn test_keygen() {
-    //     let dimentsion = 2;
-    //     let degree = 4;
-    //     let rng = &mut rand::thread_rng();
-    //     let private_key = PrivateKey::new(rng, dimentsion, degree);
-    //     let public_key = PublickKey::from_private(rng, dimentsion, degree, &private_key);
-    // }
 }

@@ -154,7 +154,6 @@ impl Div for Fq {
 
         let inv = Self::inverse(rhs.value as i64, Self::MODULUS as i64)
             .expect("Divisor has no modular inverse");
-
         Self::new(self.value * inv)
     }
 }

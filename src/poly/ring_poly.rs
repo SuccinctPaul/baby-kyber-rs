@@ -138,8 +138,8 @@ impl<R: Ring> Polynomial for RingPolynomial<R> {
     // TODO: all
     const MODULUS: Vec<Self::Coefficient> = vec![];
 
-    fn rand(rng: &mut impl rand::RngCore, n: usize) -> Self {
-        let coeffs = (0..n).map(|_| R::rand(rng)).collect::<Vec<_>>();
+    fn rand(rng: &mut impl rand::RngCore, degree: usize) -> Self {
+        let coeffs = (0..degree + 1).map(|_| R::rand(rng)).collect::<Vec<_>>();
         Self::from_coefficients(coeffs)
     }
 
@@ -448,7 +448,7 @@ impl<'a, R: Ring> SubAssign<&'a Self> for RingPolynomial<R> {
 //     }
 // }
 
-impl<R: Ring + Display> Display for RingPolynomial<R> {
+impl<R: Ring> Display for RingPolynomial<R> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         if self.coeffs.is_empty() || (self.coeffs.len() == 1 && self.coeffs[0] == R::zero()) {
             return write!(f, "0");
@@ -527,6 +527,28 @@ mod tests {
         ); // x^2 + 2x + 3
         let result = p1 - p2;
         assert_eq!(result.coeffs, vec![Fq::new(3); 3]);
+
+        //     s_tranpose_dot_u: "2x^3 + 7x^2 + 8x + 3"
+        // ciphter_text.v:
+        // "11x^3 + 7x^2 + x + 13"
+        let p3 = RingPolynomial::<Fq>::from_coefficients(
+            vec![13, 1, 7, 11].into_iter().map(Fq::from).collect(),
+        );
+
+        // 2x^3 + 7x^2 + 8x + 3
+        let p4 = RingPolynomial::<Fq>::from_coefficients(
+            vec![3, 8, 7, 2].into_iter().map(Fq::from).collect(),
+        );
+
+        // TODO: debug
+        let result = p3 - p4;
+        println!("result: {:?}", result.to_string());
+        assert_eq!(result.coeffs, vec![
+            Fq::new(10),
+            Fq::new(7).neg(),
+            Fq::zero(),
+            Fq::new(9)
+        ]);
     }
 
     #[test]

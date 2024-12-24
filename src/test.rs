@@ -4,15 +4,16 @@ use crate::ring::fq::Fq;
 
 #[test]
 fn test_baby_kyber() {
-    let msg = &vec![11];
+    let msg = 11;
 
     let rng = &mut rand::thread_rng();
 
-    let baby_kyber = BabyKyber::<RingPolynomial<Fq>>::init(2, 2);
+    let baby_kyber = BabyKyber::<RingPolynomial<Fq>>::init(2, 1);
 
     let (private_key, public_key) = baby_kyber.keygen(rng);
-    let ciphertext = baby_kyber.encrypto(rng, msg, &public_key);
 
+    let ciphertext = baby_kyber.encrypto(rng, msg, &public_key);
     let is_verified = BabyKyber::<RingPolynomial<Fq>>::decrypto(msg, ciphertext, &private_key);
     assert!(is_verified);
+    println!("==successfully verified decrypted message");
 }

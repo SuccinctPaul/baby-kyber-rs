@@ -1,7 +1,10 @@
 use crate::matrix::Matrix;
 use crate::matrix::vector_arithmatic::VectorArithmatic;
 use crate::poly::Polynomial;
+use crate::poly::ring_poly::RingPolynomial;
 use crate::ring::Ring;
+use std::fmt;
+use std::fmt::{Display, Formatter};
 use std::ops::{Add, AddAssign, Div, Mul, Sub};
 
 /// This defined `matrix` (rows * cols) （m × n）
@@ -37,6 +40,42 @@ impl<P: Polynomial> PolyMatrix<P> {
             .iter()
             .map(|v| v.get(column_index).unwrap().clone())
             .collect::<Vec<_>>()
+    }
+
+    // pub fn from_vector(vector: Vec<P>) -> Self {
+    //     for x in &vector {
+    //         println!("from_vector.raw:  {}", x.to_string());
+    //     }
+    //
+    //     let res = Self {
+    //         rows: 1,
+    //         cols: vector.len(),
+    //         values: vec![vector],
+    //     };
+    //     for i in 0..res.rows {
+    //         for j in 0..res.cols {
+    //             let value = res.get(i, j).unwrap_or(&P::zero()).clone();
+    //             println!("from_vector.res: {i},{j}: {}", value);
+    //         }
+    //     }
+    //     res
+    // }
+
+    pub fn from_vector_as_row(vector: Vec<P>) -> Self {
+        let res = Self {
+            rows: 1,
+            cols: vector.len(),
+            values: vec![vector],
+        };
+        res
+    }
+    pub fn from_vector_as_col(vector: Vec<P>) -> Self {
+        let mut matrix = Self::new(vector.len(), 1);
+
+        for (row, v) in vector.into_iter().enumerate() {
+            matrix.set(row, 0, v);
+        }
+        matrix
     }
 
     pub fn vec_dot_mul(a: &Vec<P>, b: &Vec<P>) -> P {
@@ -80,20 +119,21 @@ impl<P: Polynomial> PolyMatrix<P> {
             .collect::<Vec<_>>()
     }
 
-    /// https://en.wikipedia.org/wiki/Dot_product
-    /// Suppose A(m * n), x(n) => A * x = y(m)
-    pub fn mul_vector(&self, vector: &Vec<P>) -> Vec<P> {
-        assert_eq!(
-            self.cols,
-            vector.len(),
-            "Matrix columns must match vector length"
-        );
-
-        self.values
-            .iter()
-            .map(|row| Self::vec_dot_mul(row, vector))
-            .collect()
-    }
+    // /// https://en.wikipedia.org/wiki/Dot_product
+    // /// Suppose A(m * n), x(n) => A * x = y(m)
+    // pub fn mul_vector(&self, vector: &Vec<P>) -> Vec<P> {
+    //     let vec_matrix = Self::from_vector(vector, &self.values);
+    //     // assert_eq!(
+    //     //     self.cols,
+    //     //     vector.len(),
+    //     //     "Matrix columns must match vector length"
+    //     // );
+    //
+    //     // self.values
+    //     //     .iter()
+    //     //     .map(|row| Self::vec_dot_mul(row, vector))
+    //     //     .collect()
+    // }
 
     /// https://en.wikipedia.org/wiki/Dot_product
     /// Suppose A(m * n), B(n, p) => A * B = C(m * p)
@@ -158,11 +198,12 @@ impl<P: Polynomial> Matrix<P> for PolyMatrix<P> {
 
     fn transpose(&self) -> Self {
         let mut transposed = Self::new(self.cols, self.rows);
+
         for i in 0..self.rows {
             for j in 0..self.cols {
-                transposed
-                    .set(j, i, self.get(i, j).unwrap().clone())
-                    .unwrap();
+                let value = self.get(i, j).unwrap_or(&P::zero()).clone();
+                println!("tranpose: {i},{j}: {}", value);
+                transposed.set(j, i, value).unwrap();
             }
         }
         transposed
@@ -258,6 +299,25 @@ impl<P: Polynomial> Mul for PolyMatrix<P> {
     }
 }
 
+impl<P: Polynomial> Display for PolyMatrix<P> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        if self.cols == 0 || self.rows == 0 {
+            return write!(f, "Empty");
+        }
+
+        for (i, row) in self.values.iter().enumerate() {
+            print!("|");
+
+            for value in row.iter() {
+                print!(" {},", value.to_string());
+            }
+
+            println!("|");
+        }
+
+        Ok(())
+    }
+}
 #[cfg(test)]
 mod test {
     use crate::matrix::Matrix;
@@ -266,12 +326,13 @@ mod test {
     use crate::poly::ring_poly::RingPolynomial;
     use crate::ring::Ring;
     use crate::ring::fq::Fq;
-    use std::ops::Neg;
+    use std::ops::{Mul, Neg};
 
     #[test]
     fn test_ring_matrix_new() {
         let matrix = PolyMatrix::<RingPolynomial<Fq>>::new(3, 4);
         println!("{:?}", matrix);
+        println!("{:?}", matrix.to_string());
     }
 
     #[test]
@@ -318,6 +379,8 @@ mod test {
                 ],
             ],
         };
+        println!("{:?}", matrix.to_string());
+
         let transposed: PolyMatrix<RingPolynomial<Fq>> = matrix.transpose();
         let expect = PolyMatrix::<RingPolynomial<Fq>> {
             rows: m,
@@ -362,6 +425,20 @@ mod test {
     }
 
     #[test]
+    fn test_from_vector_by_row_and_col() {
+        // [3x+1, x+3]
+        let rhs = vec![
+            RingPolynomial::from_coefficients(vec![Fq::new(1), Fq::new(3)]),
+            RingPolynomial::from_coefficients(vec![Fq::new(3), Fq::new(1)]),
+        ];
+
+        let p1 = PolyMatrix::from_vector_as_col(rhs.clone());
+        let p2 = PolyMatrix::from_vector_as_row(rhs.clone());
+
+        assert_eq!(p1, p2.transpose());
+    }
+
+    #[test]
     fn test_mul_vector() {
         let m = 2;
         let rng = &mut rand::thread_rng();
@@ -394,8 +471,9 @@ mod test {
             RingPolynomial::from_coefficients(vec![Fq::new(5).neg(), Fq::new(5), Fq::new(4)]),
         ];
 
-        let res = lhs.mul_vector(&rhs);
-        assert_eq!(expect, res);
+        let rhs = PolyMatrix::from_vector_as_col(rhs);
+        let res = lhs.mul(rhs);
+        assert_eq!(PolyMatrix::from_vector_as_col(expect), res);
     }
 
     #[test]
@@ -500,11 +578,12 @@ mod test {
             RingPolynomial::from_coefficients(vec![Fq::new(1), Fq::new(3)]),
             RingPolynomial::from_coefficients(vec![Fq::new(3), Fq::new(1)]),
         ];
+        let x = PolyMatrix::from_vector_as_col(x);
 
         // A*B*x
-        let res1 = PolyMatrix::<RingPolynomial<Fq>>::mul_matrix(&lhs, &rhs).mul_vector(&x);
+        let res1 = PolyMatrix::<RingPolynomial<Fq>>::mul_matrix(&lhs, &rhs).mul(x.clone());
         // A*(B*x)
-        let res2 = lhs.mul_vector(&rhs.mul_vector(&x));
+        let res2 = lhs.mul(rhs.mul(x));
         assert_eq!(res1, res2);
     }
 }
