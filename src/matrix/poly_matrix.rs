@@ -202,7 +202,6 @@ impl<P: Polynomial> Matrix<P> for PolyMatrix<P> {
         for i in 0..self.rows {
             for j in 0..self.cols {
                 let value = self.get(i, j).unwrap_or(&P::zero()).clone();
-                println!("tranpose: {i},{j}: {}", value);
                 transposed.set(j, i, value).unwrap();
             }
         }
@@ -304,7 +303,8 @@ impl<P: Polynomial> Display for PolyMatrix<P> {
         if self.cols == 0 || self.rows == 0 {
             return write!(f, "Empty");
         }
-
+        println!("===================================");
+        println!("Matrix: rows={}, cols={}", self.rows, self.cols);
         for (i, row) in self.values.iter().enumerate() {
             print!("|");
 
@@ -314,6 +314,7 @@ impl<P: Polynomial> Display for PolyMatrix<P> {
 
             println!("|");
         }
+        println!("===================================");
 
         Ok(())
     }

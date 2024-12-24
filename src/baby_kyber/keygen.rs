@@ -1,9 +1,10 @@
 use crate::baby_kyber::constant::ERROR_POLY_DEGREE;
+use crate::baby_kyber::utils::small_poly_vector;
 use crate::matrix::poly_matrix::PolyMatrix;
 use crate::matrix::ring_matrix::RingMatrix;
 use crate::matrix::vector_arithmatic::VectorArithmatic;
+use crate::poly::Polynomial;
 use crate::poly::ring_poly::RingPolynomial;
-use crate::poly::{Polynomial, small_poly_vector};
 use crate::ring::Ring;
 use rand::RngCore;
 

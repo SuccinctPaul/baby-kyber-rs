@@ -16,7 +16,9 @@ Also, “regular” Kyber uses compression for ciphertexts, which we will omit h
 
 
 ## MLWE
-The trick is that it is a hard problem to recover `s` from `(A t)`. 
+> t = A*s + e
+
+The trick is that it is a hard problem to recover `s` from `(A t)`.
 In fact, recovering `s` would require an attacker to solve the module-learning-with-errors (MLWE) problem, on which this system is built. 
 The MLWE problem is expected to be hard even for quantum computers, which is why it is used in PQC.
 

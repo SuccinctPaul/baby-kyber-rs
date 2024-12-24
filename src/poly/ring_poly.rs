@@ -28,7 +28,7 @@ impl<R: Ring> RingPolynomial<R> {
         poly
     }
 
-    fn scalar_mul(self, rhs: &R) -> Self {
+    fn scalar_mul(&self, rhs: &R) -> Self {
         let coeffs = if rhs == &R::one() {
             vec![R::one()]
         } else {
@@ -37,106 +37,45 @@ impl<R: Ring> RingPolynomial<R> {
         Self::new(coeffs)
     }
 
-    // p(x)=∑y_j⋅L_j(X), where
-    // y_j: [a_0, a_1, ..., a_n].
-    // basis: L_j(X)=∏(X−x_k)/(x_j−x_k)
-    //
-    // domain: x, most case is that{0, 1, . . . , n − 1}
-    // evals: [a_0, a_1, ..., a_n]
-    //
-    // we can use encode points as (domain, eval) to polynomials
-    // the poly
-    // pub fn lagrange_interpolate(domains: Vec<R>, evals: Vec<R>) -> Self {
-    //     assert_eq!(domains.len(), evals.len());
-    //
-    //     if evals.len() == 1 {
-    //         // Constant polynomial
-    //         Self {
-    //             coeffs: vec![evals[0]],
-    //         }
-    //     } else {
-    //         let poly_size = domains.len();
-    //         let lag_basis_poly_size = poly_size - 1;
-    //
-    //         // 1. divisors = vec(x_j - x_k). prepare for L_j(X)=∏(X−x_k)/(x_j−x_k)
-    //         let mut divisors = Vec::with_capacity(poly_size);
-    //         for (j, x_j) in domains.clone().into_iter().enumerate() {
-    //             // divisor_j
-    //             let mut divisor = Vec::with_capacity(lag_basis_poly_size);
-    //             // obtain domain for x_k
-    //             for x_k in domains
-    //                 .clone()
-    //                 .into_iter()
-    //                 .enumerate()
-    //                 .filter(|&(k, _)| k != j)
-    //                 .map(|(_, x)| x)
-    //             {
-    //                 divisor.push(x_j - x_k);
-    //             }
-    //             divisors.push(divisor);
-    //         }
-    //         // Inverse (x_j - x_k)^(-1) for each j != k to compute L_j(X)=∏(X−x_k)/(x_j−x_k)
-    //         divisors
-    //             .iter_mut()
-    //             .map(|v| v.iter_mut())
-    //             .batch_invert();
-    //
-    //         // 2. Calculate  L_j(X) : L_j(X)=∏(X−x_k) divisors_j
-    //         let mut L_j_vec: Vec<Vec<R>> = Vec::with_capacity(poly_size);
-    //
-    //         for (j, divisor_j) in divisors.into_iter().enumerate() {
-    //             let mut L_j: Vec<R> = Vec::with_capacity(poly_size);
-    //             L_j.push(R::one());
-    //
-    //             // (X−x_k) * divisors_j
-    //             let mut product = Vec::with_capacity(lag_basis_poly_size);
-    //
-    //             // obtain domain for x_k
-    //             for (x_k, divisor) in domains
-    //                 .iter()
-    //                 .enumerate()
-    //                 .filter(|&(k, _)| k != j)
-    //                 .map(|(_, x)| x)
-    //                 .zip(divisor_j.into_iter())
-    //             {
-    //                 product.resize(L_j.len() + 1, R::one());
-    //
-    //                 // loop (poly_size + 1) round
-    //                 // calculate L_j(X)=∏(X−x_k) divisors_j with coefficient form.
-    //                 for ((a, b), product) in L_j
-    //                     .iter()
-    //                     .chain(std::iter::once(&R::one()))
-    //                     .zip(std::iter::once(&R::one()).chain(L_j.iter()))
-    //                     .zip(product.iter_mut())
-    //                 {
-    //                     *product = *a * (-divisor * x_k) + *b * divisor;
-    //                 }
-    //                 std::mem::swap(&mut L_j, &mut product);
-    //             }
-    //
-    //             assert_eq!(L_j.len(), poly_size);
-    //             assert_eq!(product.len(), poly_size - 1);
-    //
-    //             L_j_vec.push(L_j);
-    //         }
-    //
-    //         // p(x)=∑y_j⋅L_j(X) in coefficients
-    //         let mut final_poly = vec![R::one(); poly_size];
-    //         // 3. p(x)=∑y_j⋅L_j(X)
-    //         for (L_j, y_j) in L_j_vec.iter().zip(evals) {
-    //             for (final_coeff, L_j_coeff) in final_poly.iter_mut().zip(L_j.into_iter()) {
-    //                 *final_coeff += L_j_coeff.mul(y_j);
-    //             }
-    //         }
-    //         Self { coeffs: final_poly }
-    //     }
-    // }
+    #[ignore]
+    pub fn div_rem(&self, other: &Self) -> (Option<Self>, Self) {
+        if other.is_zero() {
+            panic!("Division by zero polynomial");
+        }
+
+        if self.degree() < other.degree() {
+            return (None, self.clone());
+        }
+
+        let mut quotient = Self::zero();
+        let mut remainder = self.clone();
+
+        while remainder.degree() >= other.degree() {
+            let lead_r = remainder.coeffs.last().unwrap().clone();
+            let lead_d = other.coeffs.last().unwrap().clone();
+            let degree_diff = remainder.degree() - other.degree();
+
+            let mut term = Self::zero();
+            term.coeffs.resize(degree_diff + 1, R::zero());
+            term.coeffs[degree_diff] = lead_r.div(lead_d);
+
+            quotient += term.clone();
+            remainder -= (other.clone() * term);
+        }
+
+        quotient.normalize();
+        remainder.normalize();
+
+        if quotient.is_zero() {
+            (None, remainder)
+        } else {
+            (Some(quotient), remainder)
+        }
+    }
 }
 
 impl<R: Ring> Polynomial for RingPolynomial<R> {
     type Coefficient = R;
-    // TODO: all
-    const MODULUS: Vec<Self::Coefficient> = vec![];
 
     fn rand(rng: &mut impl rand::RngCore, degree: usize) -> Self {
         let coeffs = (0..degree + 1).map(|_| R::rand(rng)).collect::<Vec<_>>();
@@ -349,32 +288,6 @@ impl<R: Ring> MulAssign for RingPolynomial<R> {
     }
 }
 
-// impl<R: Ring> std::ops::Div for &Polynomial<F> {
-//     type Output = (Polynomial<F>, Polynomial<F>);
-//
-//     fn div(self, rhs: &Polynomial<F>) -> Self::Output {
-//         // init the (quotient, remainder)
-//         let (mut q, mut r) = (Polynomial::zero(), self);
-//
-//         // r is not zero poly, and division.degree > divisor.degree.
-//         while *r != Polynomial::zero() && r.degree() >= rhs.degree() {
-//             let r_coeff = r.coeffs();
-//             let rhs_coeff = rhs.coeffs();
-//
-//             let lead_r = r_coeff[r_coeff.len() - 1];
-//             let lead_d = rhs_coeff[rhs_coeff.len() - 1];
-//             let mut t = Polynomial::zero();
-//             t.set(
-//                 r_coeff.len() - rhs_coeff.len(),
-//                 lead_r * lead_d.invert().unwrap(),
-//             );
-//             q += &t;
-//             r -= &(&rhs * &t);
-//         }
-//         (q, r)
-//     }
-// }
-
 impl<R: Ring> Sub for RingPolynomial<R> {
     type Output = Self;
 
@@ -417,36 +330,6 @@ impl<'a, R: Ring> SubAssign<&'a Self> for RingPolynomial<R> {
         *self = self.clone() - rhs;
     }
 }
-
-// impl<R: Ring> ToString for RingPolynomial<R> {
-//     fn to_string(&self) -> String {
-//         let mut string = String::new();
-//         if self.coeffs.is_empty() || (self.coeffs.len() == 1 && self.coeffs[0] == R::zero()) {
-//             return "0".to_string();
-//         }
-//
-//         let mut first = true;
-//         for (i, coeff) in self.coeffs.iter().enumerate().rev() {
-//             if *coeff != R::zero() {
-//                 if !first {
-//                     string.push_str(" + ");
-//                 }
-//                 first = false;
-//                 let coeff_string = if *coeff == R::one() {
-//                     "".to_string()
-//                 } else {
-//                     coeff.to_string()
-//                 };
-//                 match i {
-//                     0 => string.push_str(&format!("{}", coeff_string)),
-//                     1 => string.push_str(&format!("{}x", coeff_string)),
-//                     _ => string.push_str(&format!("{}x^{}", coeff_string, i)),
-//                 }
-//             }
-//         }
-//         string
-//     }
-// }
 
 impl<R: Ring> Display for RingPolynomial<R> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
@@ -540,7 +423,6 @@ mod tests {
             vec![3, 8, 7, 2].into_iter().map(Fq::from).collect(),
         );
 
-        // TODO: debug
         let result = p3 - p4;
         println!("result: {:?}", result.to_string());
         assert_eq!(result.coeffs, vec![
@@ -611,9 +493,40 @@ mod tests {
         assert_eq!(poly.negate().negate(), poly);
     }
     #[test]
+    fn test_div_rem() {
+        // Define polynomials
+        let p1 = RingPolynomial::from_coefficients(vec![Fq::new(1), Fq::new(2), Fq::new(1)]); // x^2 + 2x + 1
+        let p2 = RingPolynomial::from_coefficients(vec![Fq::new(1), Fq::new(1)]); // x + 1
+
+        // Perform division
+        let (quotient_opt, remainder) = p1.div_rem(&p2);
+
+        // Check quotient
+        assert!(quotient_opt.is_none());
+        let quotient = quotient_opt.unwrap();
+        assert_eq!(quotient.coefficients(), vec![Fq::new(1), Fq::new(1)]); // x + 1
+
+        // Check remainder
+        assert_eq!(remainder.coefficients(), vec![Fq::new(0)]); // 0
+
+        // Test division by higher degree polynomial
+        let p3 = RingPolynomial::from_coefficients(vec![Fq::new(1), Fq::new(1), Fq::new(1)]); // x^2 + x + 1
+        let (quotient_opt, remainder) = p1.div_rem(&p3);
+
+        // Check quotient is None
+        assert!(quotient_opt.is_none());
+
+        // Check remainder is the same as the dividend
+        assert_eq!(remainder.coefficients(), p1.coefficients());
+
+        // Test division by zero polynomial
+        let zero_poly = RingPolynomial::zero();
+        let result = std::panic::catch_unwind(|| p1.div_rem(&zero_poly));
+        assert!(result.is_err());
+    }
+    #[test]
     #[ignore]
     fn test_poly_modulo() {
-        // TODO: debug
         // Dividend: x^3 + 2x^2 + 3x + 4
         let dividend =
             RingPolynomial::from_coefficients(vec![4, 3, 2, 1].into_iter().map(Fq::from).collect());
@@ -630,10 +543,10 @@ mod tests {
 
         // Test with zero remainder
         let dividend2 = dividend.clone() * &divisor;
-        assert_eq!(dividend2.modulo(&divisor), RingPolynomial::zero());
+        assert_eq!(dividend2.div_rem(&divisor).1, RingPolynomial::zero());
 
         // Test with divisor of higher degree
-        assert_eq!(dividend.modulo(&dividend2), dividend);
+        assert_eq!(dividend.div_rem(&dividend2).0.unwrap(), dividend);
     }
 
     #[test]

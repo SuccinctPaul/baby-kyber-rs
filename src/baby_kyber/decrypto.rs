@@ -11,35 +11,28 @@ use std::ops::{Div, Sub};
 impl<P: Polynomial> BabyKyber<P> {
     // Kyber ciphtertexts consist of those two values: (u,v)
     pub fn decrypto(msg: u8, ciphter_text: Ciphtertexts<P>, private_key: &PrivateKey<P>) -> bool {
+        println!("\n\n ==start decrypto");
+
         // 1. First, we compute a noisy result m_n
         //      m_n = v - s^T * u
         let m_n = {
-            // TODO: here.
             let s_tranpose = {
                 let s = private_key.s.clone();
-                for p in &s.values {
-                    for p1 in p {
-                        println!("s.p.pi: {:?}", p1.to_string());
-                    }
-                }
+
                 let s_transpose = s.transpose();
-                for p in &s_transpose.values {
-                    for p1 in p {
-                        println!("s_tranpose.p.pi: {:?}", p1.to_string());
-                    }
-                }
+
                 s_transpose
             };
             let s_tranpose_dot_u = s_tranpose * ciphter_text.u;
             // for p in s_tranpose_dot_u.iter() {
             //     println!("s_tranpose_dot_u: {:?}", p.to_string()); // okey
             // }
-            println!("ciphter_text.v: {:?}", ciphter_text.v.to_string()); // okey
+            // println!("ciphter_text.v: {:?}", ciphter_text.v.to_string()); // okey
             // let s_tranpose_dot_u = PolyMatrix::vec_dot_mul(&private_key.s, &ciphter_text.u);
             ciphter_text.v - s_tranpose_dot_u.values[0][0].clone()
         };
         // decrypto.m_n: "9x^3 + 10x + 10"
-        println!("decrypto.m_n: {:?}", m_n.to_string());
+        // println!("decrypto.m_n: {:?}", m_n.to_string());
 
         // 2. round and scalar m_n
         let scalaed_m_n = {
@@ -89,8 +82,8 @@ impl<P: Polynomial> BabyKyber<P> {
     pub fn round(coeffs: Vec<P::Coefficient>) -> Vec<P::Coefficient> {
         let scalar = Self::compute_scalar();
         let half_scalar = Self::compute_half_scalar();
-        println!("scalar: {:?}", scalar.to_string());
-        println!("half_scalar: {:?}", half_scalar.to_string());
+        // println!("scalar: {:?}", scalar.to_string());
+        // println!("half_scalar: {:?}", half_scalar.to_string());
         coeffs
             .into_iter()
             .map(|c| {

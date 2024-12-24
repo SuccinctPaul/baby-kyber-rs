@@ -10,6 +10,7 @@ mod constant;
 pub mod decrypto;
 pub mod encrypto;
 pub mod keygen;
+pub mod utils;
 
 pub struct BabyKyber<P: Polynomial> {
     // dimension of matrices

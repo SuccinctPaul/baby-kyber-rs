@@ -24,11 +24,6 @@ pub trait Polynomial:
 {
     type Coefficient: Ring;
 
-    /// The modulus of the polynomial ring
-    // const MODULE: Self;
-
-    const MODULUS: Vec<Self::Coefficient>;
-
     fn rand(rng: &mut impl rand::RngCore, degree: usize) -> Self;
     /// Remove leading zero coefficients
     fn normalize(&mut self);
@@ -74,20 +69,4 @@ pub trait Polynomial:
     //
     // /// Compute the extended Euclidean algorithm for polynomials
     // fn extended_gcd(a: &Self, b: &Self) -> (Self, Self, Self);
-}
-
-// a randomizer polynomial vector
-// These polynomial vectors are freshly generated for every encryption.
-pub fn small_poly_vector<P: Polynomial>(
-    rng: &mut impl RngCore,
-    dimension: usize,
-    degree: usize,
-) -> Vec<P> {
-    let mut s = vec![];
-    for _ in 0..dimension {
-        // s.push(P::rand(rng, degree));
-        // 1 + x
-        s.push(P::from_coefficients(vec![P::Coefficient::one(); 2]));
-    }
-    s
 }
