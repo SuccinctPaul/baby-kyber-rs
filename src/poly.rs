@@ -1,7 +1,9 @@
 use crate::ring::Ring;
 use rand::RngCore;
 use std::fmt::{Debug, Display};
-use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub, SubAssign};
+use std::ops::{
+    Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Rem, RemAssign, Sub, SubAssign,
+};
 
 pub mod uni_poly;
 
@@ -15,6 +17,12 @@ pub trait Polynomial:
     + Sub<Output = Self>
     + for<'a> Sub<&'a Self, Output = Self>
     + SubAssign
+    + Div<Output = Self>
+    + for<'a> Div<&'a Self, Output = Self>
+    + DivAssign
+    + Rem<Output = Self>
+    + for<'a> Rem<&'a Self, Output = Self>
+    + RemAssign
     + Sized
     + Clone
     + Debug
@@ -61,8 +69,11 @@ pub trait Polynomial:
     /// Check if the polynomial is zero
     fn is_zero(&self) -> bool;
 
-    /// Reduce the polynomial modulo another polynomial
-    fn modulo(&self, other: &Self) -> Self;
+    /// Divide self by another polynomial, and returns the
+    /// quotient and remainder.
+    ///
+    /// Reference: https://github.com/arkworks-rs/algebra/blob/9ce33e6ef1368a0f5b01b91e6df5bc5877129f30/poly/src/polynomial/univariate/mod.rs#L105
+    fn divide_with_q_and_r(&self, divisor: &Self) -> Option<(Self, Self)>;
 
     // /// Compute the greatest common divisor of two polynomials
     // fn gcd(a: &Self, b: &Self) -> Self;

@@ -134,6 +134,7 @@ impl Neg for Zq {
 impl Sub for Zq {
     type Output = Self;
 
+    // a−b mod q=(a+(q−b))mod q
     fn sub(self, rhs: Self) -> Self::Output {
         Self::new(self.value + Self::MODULUS - rhs.value)
     }
@@ -141,7 +142,7 @@ impl Sub for Zq {
 
 impl SubAssign for Zq {
     fn sub_assign(&mut self, rhs: Self) {
-        self.value = (self.value - rhs.value) % Self::MODULUS;
+        self.value = (self.value + Self::MODULUS - rhs.value) % Self::MODULUS;
     }
 }
 

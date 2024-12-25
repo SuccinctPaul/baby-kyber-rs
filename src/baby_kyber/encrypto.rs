@@ -52,7 +52,7 @@ impl<P: Polynomial> BabyKyber<P> {
         let (e1, e2, r) = {
             let poly_e1 = small_poly_vector(rng, self.dimension, self.degree);
             // let poly_e1 = random_poly_vector(rng, self.dimension, self.degree);
-            let poly_e2 = P::from_coefficients(vec![P::Coefficient::from(1); self.degree]);
+            let poly_e2 = P::from_coefficients(vec![P::Coefficient::one(); self.degree]);
             let poly_r = small_poly_vector(rng, self.dimension, self.degree);
 
             let r = PolyMatrix::from_vector_as_col(poly_r);

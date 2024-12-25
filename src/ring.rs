@@ -1,8 +1,9 @@
+// mod ring_poly;
 pub mod zq;
 
 use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Display};
-use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub, SubAssign};
+use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Rem, Sub, SubAssign};
 use std::random::Random;
 
 pub trait Ring:

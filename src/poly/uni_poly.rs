@@ -3,7 +3,7 @@ use std::fmt;
 use std::fmt::{Debug, Display, Formatter};
 
 use crate::ring::Ring;
-use std::ops::{Add, AddAssign, Mul, MulAssign, Sub, SubAssign};
+use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Rem, RemAssign, Sub, SubAssign};
 
 use rayon::{current_num_threads, scope};
 
@@ -37,42 +37,6 @@ impl<R: Ring> UniPolynomial<R> {
         };
         Self::new(coeffs)
     }
-
-    #[ignore]
-    pub fn div_rem(&self, other: &Self) -> (Option<Self>, Self) {
-        if other.is_zero() {
-            panic!("Division by zero polynomial");
-        }
-
-        if self.degree() < other.degree() {
-            return (None, self.clone());
-        }
-
-        let mut quotient = Self::zero();
-        let mut remainder = self.clone();
-
-        while remainder.degree() >= other.degree() {
-            let lead_r = remainder.coeffs.last().unwrap().clone();
-            let lead_d = other.coeffs.last().unwrap().clone();
-            let degree_diff = remainder.degree() - other.degree();
-
-            let mut term = Self::zero();
-            term.coeffs.resize(degree_diff + 1, R::zero());
-            term.coeffs[degree_diff] = lead_r.div(lead_d);
-
-            quotient += term.clone();
-            remainder -= (other.clone() * term);
-        }
-
-        quotient.normalize();
-        remainder.normalize();
-
-        if quotient.is_zero() {
-            (None, remainder)
-        } else {
-            (Some(quotient), remainder)
-        }
-    }
 }
 
 impl<R: Ring> Polynomial for UniPolynomial<R> {
@@ -98,8 +62,11 @@ impl<R: Ring> Polynomial for UniPolynomial<R> {
 
     // The degree of the polynomial
     fn degree(&self) -> usize {
-        assert!(self.coeffs.len() > 0);
-        self.coeffs.len() - 1
+        if self.is_zero() {
+            0
+        } else {
+            self.coeffs.len() - 1
+        }
     }
 
     fn coefficient(&self, i: usize) -> Self::Coefficient {
@@ -175,37 +142,37 @@ impl<R: Ring> Polynomial for UniPolynomial<R> {
     }
 
     fn is_zero(&self) -> bool {
-        self == &Self::zero()
+        self.coeffs.is_empty() || self.coeffs.iter().all(|c| c == &R::zero())
     }
 
-    fn modulo(&self, other: &Self) -> Self {
-        assert!(!other.is_zero(), "Cannot perform modulo by zero polynomial");
+    fn divide_with_q_and_r(&self, divisor: &Self) -> Option<(Self, Self)> {
+        if self.is_zero() {
+            Some((Self::zero(), Self::zero()))
+        } else if divisor.is_zero() {
+            panic!("Dividing by zero polynomial")
+        } else if self.degree() < divisor.degree() {
+            Some((Self::zero(), self.clone().into()))
+        } else {
+            // Now we know that self.degree() >= divisor.degree();
+            let mut quotient = vec![R::zero(); self.degree() - divisor.degree() + 1];
+            let mut remainder = self.clone();
 
-        if self.degree() < other.degree() {
-            return self.clone();
-        }
+            // Can unwrap here because we know self is not zero.
+            let divisor_last = divisor.coeffs.last().unwrap();
+            while !remainder.is_zero() && remainder.degree() >= divisor.degree() {
+                let cur_q_coeff = remainder.coeffs.last().unwrap().clone() * divisor_last;
+                let cur_q_degree = remainder.degree() - divisor.degree();
+                quotient[cur_q_degree] = cur_q_coeff.clone();
 
-        let mut remainder = self.clone();
-        let divisor_lead = other
-            .coeffs
-            .last()
-            .expect("Leading coefficient must be invertible")
-            .to_owned();
-        let divisor_degree = other.degree();
-
-        while remainder.degree() >= divisor_degree {
-            let degree_diff = remainder.degree() - divisor_degree;
-            let scalar = remainder.coeffs.last().unwrap().clone().div(divisor_lead);
-
-            for (i, coeff) in other.coeffs.iter().enumerate() {
-                let idx = degree_diff + i;
-                remainder.coeffs[idx] -= scalar.clone() * coeff;
+                for (i, div_coeff) in divisor.coefficients().iter().enumerate() {
+                    remainder.coeffs[cur_q_degree + i] -= (cur_q_coeff.clone() * div_coeff);
+                }
+                while let Some(true) = remainder.coefficients().last().map(|c| c == &R::zero()) {
+                    remainder.coeffs.pop();
+                }
             }
-
-            remainder.normalize();
+            Some((Self::from_coefficients(quotient), remainder))
         }
-
-        remainder
     }
 }
 
@@ -329,6 +296,68 @@ impl<R: Ring> SubAssign for UniPolynomial<R> {
 impl<'a, R: Ring> SubAssign<&'a Self> for UniPolynomial<R> {
     fn sub_assign(&mut self, rhs: &Self) {
         *self = self.clone() - rhs;
+    }
+}
+
+impl<R: Ring> Div for UniPolynomial<R> {
+    type Output = Self;
+
+    fn div(self, divisor: Self) -> Self::Output {
+        if let Some((q, r)) = self.divide_with_q_and_r(&divisor) {
+            return q;
+        }
+        panic!("Dividing by zero polynomial")
+    }
+}
+
+impl<'a, R: Ring> Div<&'a Self> for UniPolynomial<R> {
+    type Output = Self;
+    fn div(self, divisor: &Self) -> Self::Output {
+        if let Some((q, r)) = self.divide_with_q_and_r(divisor) {
+            return q;
+        }
+        panic!("Dividing by zero polynomial")
+    }
+}
+impl<R: Ring> DivAssign for UniPolynomial<R> {
+    fn div_assign(&mut self, rhs: Self) {
+        *self = self.clone() / rhs;
+    }
+}
+impl<'a, R: Ring> DivAssign<&'a Self> for UniPolynomial<R> {
+    fn div_assign(&mut self, rhs: &Self) {
+        *self = self.clone() / rhs;
+    }
+}
+
+impl<R: Ring> Rem for UniPolynomial<R> {
+    type Output = Self;
+
+    fn rem(self, divisor: Self) -> Self::Output {
+        if let Some((q, r)) = self.divide_with_q_and_r(&divisor) {
+            return r;
+        }
+        panic!("Dividing by zero polynomial")
+    }
+}
+
+impl<'a, R: Ring> Rem<&'a Self> for UniPolynomial<R> {
+    type Output = Self;
+    fn rem(self, divisor: &Self) -> Self::Output {
+        if let Some((q, r)) = self.divide_with_q_and_r(divisor) {
+            return r;
+        }
+        panic!("Dividing by zero polynomial")
+    }
+}
+impl<R: Ring> RemAssign for UniPolynomial<R> {
+    fn rem_assign(&mut self, rhs: Self) {
+        *self = self.clone() % rhs;
+    }
+}
+impl<'a, R: Ring> RemAssign<&'a Self> for UniPolynomial<R> {
+    fn rem_assign(&mut self, rhs: &Self) {
+        *self = self.clone() % rhs;
     }
 }
 
@@ -494,60 +523,86 @@ mod tests {
         assert_eq!(poly.negate().negate(), poly);
     }
     #[test]
-    fn test_div_rem() {
+    fn test_poly_div_rem() {
         // Define polynomials
         let p1 = UniPolynomial::from_coefficients(vec![Zq::new(1), Zq::new(2), Zq::new(1)]); // x^2 + 2x + 1
         let p2 = UniPolynomial::from_coefficients(vec![Zq::new(1), Zq::new(1)]); // x + 1
 
-        // Perform division
-        let (quotient_opt, remainder) = p1.div_rem(&p2);
+        // Perform division: (x^2 + 2x + 1)/(x + 1)
+        let (quotient, remainder) = p1.clone().divide_with_q_and_r(&p2).unwrap();
 
         // Check quotient
-        assert!(quotient_opt.is_none());
-        let quotient = quotient_opt.unwrap();
         assert_eq!(quotient.coefficients(), vec![Zq::new(1), Zq::new(1)]); // x + 1
 
         // Check remainder
-        assert_eq!(remainder.coefficients(), vec![Zq::new(0)]); // 0
+        assert!(remainder.is_zero()); // 0
 
         // Test division by higher degree polynomial
         let p3 = UniPolynomial::from_coefficients(vec![Zq::new(1), Zq::new(1), Zq::new(1)]); // x^2 + x + 1
-        let (quotient_opt, remainder) = p1.div_rem(&p3);
-
-        // Check quotient is None
-        assert!(quotient_opt.is_none());
+        //  (x^2 + 2x + 1)/(x^2 + x + 1)
+        let (quotient, remainder) = p1.divide_with_q_and_r(&p3).unwrap();
 
         // Check remainder is the same as the dividend
-        assert_eq!(remainder.coefficients(), p1.coefficients());
+        assert_eq!(remainder.coefficients(), vec![Zq::new(0), Zq::new(1)]);
+        assert_eq!(quotient.coefficients(), vec![Zq::new(1)]);
+
+        // (x^2 + x + 1)/(x^2 + 2x + 1)
+        let (quotient, remainder) = p3.divide_with_q_and_r(&p1).unwrap();
+        // Check remainder is the same as the dividend
+        // assert_eq!(remainder.coefficients(), vec![Zq::new(2), Zq::new(2)]);
+        assert_eq!(
+            p3,
+            (p1.clone() * quotient) + remainder,
+            "divide_with_q_and_r error"
+        );
 
         // Test division by zero polynomial
         let zero_poly = UniPolynomial::zero();
-        let result = std::panic::catch_unwind(|| p1.div_rem(&zero_poly));
+        let result = std::panic::catch_unwind(|| p1.divide_with_q_and_r(&zero_poly));
         assert!(result.is_err());
     }
+
     #[test]
-    #[ignore]
-    fn test_poly_modulo() {
-        // Dividend: x^3 + 2x^2 + 3x + 4
-        let dividend =
-            UniPolynomial::from_coefficients(vec![4, 3, 2, 1].into_iter().map(Zq::from).collect());
+    fn test_random_divide_poly() {
+        let rng = &mut rand::thread_rng();
 
-        // Divisor: x^2 + 1
-        let divisor =
-            UniPolynomial::from_coefficients(vec![2, 1].into_iter().map(Zq::from).collect());
+        for a_degree in 1..2 {
+            for b_degree in 1..2 {
+                let dividend = UniPolynomial::<Zq>::rand(rng, a_degree);
+                let divisor = UniPolynomial::<Zq>::rand(rng, b_degree);
+                println!("{a_degree}: dividend: {:?}", dividend.to_string());
+                println!("{b_degree}: divisor: {:?}", divisor.to_string());
+                if let Some((quotient, remainder)) = dividend.divide_with_q_and_r(&divisor) {
+                    assert_eq!(
+                        dividend,
+                        (divisor * quotient) + remainder,
+                        "divide_with_q_and_r error"
+                    );
+                    println!("Success");
+                }
+                println!("next\n");
+            }
+        }
+    }
 
-        // Expected remainder: -2x + 3
-        let expected_remainder =
-            UniPolynomial::from_coefficients(vec![Zq::new(2).neg(), Zq::new(3)]);
+    #[test]
+    fn divide_polynomials_random() {
+        let rng = &mut rand::thread_rng();
 
-        assert_eq!(dividend.modulo(&divisor), expected_remainder);
-
-        // Test with zero remainder
-        let dividend2 = dividend.clone() * &divisor;
-        assert_eq!(dividend2.div_rem(&divisor).1, UniPolynomial::zero());
-
-        // Test with divisor of higher degree
-        assert_eq!(dividend.div_rem(&dividend2).0.unwrap(), dividend);
+        let a_degree = 2;
+        let b_degree = 1;
+        let dividend = UniPolynomial::<Zq>::rand(rng, a_degree);
+        let divisor = UniPolynomial::<Zq>::rand(rng, b_degree);
+        println!("{a_degree}: dividend: {:?}", dividend.to_string());
+        println!("{b_degree}: divisor: {:?}", divisor.to_string());
+        let quotient = dividend.clone().div(&divisor);
+        let remainder = dividend.clone().rem(&divisor);
+        assert_eq!(
+            dividend,
+            (divisor * quotient) + remainder,
+            "divide_with_q_and_r error"
+        );
+        println!("Success");
     }
 
     #[test]
@@ -568,7 +623,7 @@ mod tests {
         ]);
 
         // add
-        assert_eq!(p.clone().add(&q).coeffs, vec![Zq::new(2), Zq::zero()]);
+        assert_eq!(p.clone().add(&q).coeffs, vec![Zq::new(2)]);
 
         // poly.mul(Zq)
         assert_eq!(p.scalar_mul(&Zq::new(5)).coeffs, vec![
