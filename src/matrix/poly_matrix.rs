@@ -1,7 +1,7 @@
 use crate::matrix::Matrix;
 use crate::matrix::vector_arithmatic::VectorArithmatic;
 use crate::poly::Polynomial;
-use crate::poly::ring_poly::RingPolynomial;
+use crate::poly::uni_poly::UniPolynomial;
 use crate::ring::Ring;
 use std::fmt;
 use std::fmt::{Display, Formatter};
@@ -324,83 +324,83 @@ mod test {
     use crate::matrix::Matrix;
     use crate::matrix::poly_matrix::PolyMatrix;
     use crate::poly::Polynomial;
-    use crate::poly::ring_poly::RingPolynomial;
+    use crate::poly::uni_poly::UniPolynomial;
     use crate::ring::Ring;
-    use crate::ring::fq::Fq;
+    use crate::ring::zq::Zq;
     use std::ops::{Mul, Neg};
 
     #[test]
     fn test_ring_matrix_new() {
-        let matrix = PolyMatrix::<RingPolynomial<Fq>>::new(3, 4);
+        let matrix = PolyMatrix::<UniPolynomial<Zq>>::new(3, 4);
         println!("{:?}", matrix);
         println!("{:?}", matrix.to_string());
     }
 
     #[test]
     pub fn test_matrix_vec_dot_mul() {
-        let poly_1 = RingPolynomial::from_coefficients(vec![Fq::one(), Fq::one(), Fq::one()]);
-        let vec1 = vec![RingPolynomial::zero(), poly_1.clone()];
-        let vec2 = vec![poly_1.clone(), RingPolynomial::zero()];
+        let poly_1 = UniPolynomial::from_coefficients(vec![Zq::one(), Zq::one(), Zq::one()]);
+        let vec1 = vec![UniPolynomial::zero(), poly_1.clone()];
+        let vec2 = vec![poly_1.clone(), UniPolynomial::zero()];
         assert_eq!(
-            PolyMatrix::<RingPolynomial<Fq>>::vec_dot_mul(&vec1, &vec2),
-            RingPolynomial::zero()
+            PolyMatrix::<UniPolynomial<Zq>>::vec_dot_mul(&vec1, &vec2),
+            UniPolynomial::zero()
         );
 
         // [x+1, x-1]
         let vec3 = vec![
-            RingPolynomial::from_coefficients(vec![Fq::one(), Fq::one()]),
-            RingPolynomial::from_coefficients(vec![Fq::one().neg(), Fq::one()]),
+            UniPolynomial::from_coefficients(vec![Zq::one(), Zq::one()]),
+            UniPolynomial::from_coefficients(vec![Zq::one().neg(), Zq::one()]),
         ];
         // [3x+1, x+3]
         let mut vec4 = vec![
-            RingPolynomial::from_coefficients(vec![Fq::new(1), Fq::new(3)]),
-            RingPolynomial::from_coefficients(vec![Fq::new(3), Fq::new(1)]),
+            UniPolynomial::from_coefficients(vec![Zq::new(1), Zq::new(3)]),
+            UniPolynomial::from_coefficients(vec![Zq::new(3), Zq::new(1)]),
         ];
         assert_eq!(
-            PolyMatrix::<RingPolynomial<Fq>>::vec_dot_mul(&vec3, &vec4),
+            PolyMatrix::<UniPolynomial<Zq>>::vec_dot_mul(&vec3, &vec4),
             // -2 + 6x + 4x^2
-            RingPolynomial::from_coefficients(vec![Fq::new(2).neg(), Fq::new(6), Fq::new(4)])
+            UniPolynomial::from_coefficients(vec![Zq::new(2).neg(), Zq::new(6), Zq::new(4)])
         );
     }
 
     #[test]
     pub fn test_matrix_transpose() {
         let m = 2;
-        let matrix = PolyMatrix::<RingPolynomial<Fq>> {
+        let matrix = PolyMatrix::<UniPolynomial<Zq>> {
             rows: m,
             cols: m,
             values: vec![
                 vec![
-                    RingPolynomial::zero(),
-                    RingPolynomial::from_coefficients(vec![Fq::new(1), Fq::new(3)]),
+                    UniPolynomial::zero(),
+                    UniPolynomial::from_coefficients(vec![Zq::new(1), Zq::new(3)]),
                 ],
                 vec![
-                    RingPolynomial::from_coefficients(vec![Fq::one(), Fq::new(2)]),
-                    RingPolynomial::from_coefficients(vec![Fq::new(3), Fq::new(4)]),
+                    UniPolynomial::from_coefficients(vec![Zq::one(), Zq::new(2)]),
+                    UniPolynomial::from_coefficients(vec![Zq::new(3), Zq::new(4)]),
                 ],
             ],
         };
         println!("{:?}", matrix.to_string());
 
-        let transposed: PolyMatrix<RingPolynomial<Fq>> = matrix.transpose();
-        let expect = PolyMatrix::<RingPolynomial<Fq>> {
+        let transposed: PolyMatrix<UniPolynomial<Zq>> = matrix.transpose();
+        let expect = PolyMatrix::<UniPolynomial<Zq>> {
             rows: m,
             cols: m,
             values: vec![
                 vec![
-                    RingPolynomial::zero(),
-                    RingPolynomial::from_coefficients(vec![Fq::one(), Fq::new(2)]),
+                    UniPolynomial::zero(),
+                    UniPolynomial::from_coefficients(vec![Zq::one(), Zq::new(2)]),
                 ],
                 vec![
-                    RingPolynomial::from_coefficients(vec![Fq::new(1), Fq::new(3)]),
-                    RingPolynomial::from_coefficients(vec![Fq::new(3), Fq::new(4)]),
+                    UniPolynomial::from_coefficients(vec![Zq::new(1), Zq::new(3)]),
+                    UniPolynomial::from_coefficients(vec![Zq::new(3), Zq::new(4)]),
                 ],
             ],
         };
 
         assert_eq!(transposed, expect);
 
-        let recovered: PolyMatrix<RingPolynomial<Fq>> = transposed.transpose();
+        let recovered: PolyMatrix<UniPolynomial<Zq>> = transposed.transpose();
         assert_eq!(recovered, matrix);
     }
 
@@ -410,8 +410,8 @@ mod test {
         let rows = 4;
         let degree = 4;
         let rng = &mut rand::thread_rng();
-        let lhs = PolyMatrix::<RingPolynomial<Fq>>::rand(rng, rows, cols, degree);
-        let rhs = PolyMatrix::<RingPolynomial<Fq>>::rand(rng, rows, cols, degree);
+        let lhs = PolyMatrix::<UniPolynomial<Zq>>::rand(rng, rows, cols, degree);
+        let rhs = PolyMatrix::<UniPolynomial<Zq>>::rand(rng, rows, cols, degree);
 
         let sum = lhs.clone() + rhs.clone();
 
@@ -429,8 +429,8 @@ mod test {
     fn test_from_vector_by_row_and_col() {
         // [3x+1, x+3]
         let rhs = vec![
-            RingPolynomial::from_coefficients(vec![Fq::new(1), Fq::new(3)]),
-            RingPolynomial::from_coefficients(vec![Fq::new(3), Fq::new(1)]),
+            UniPolynomial::from_coefficients(vec![Zq::new(1), Zq::new(3)]),
+            UniPolynomial::from_coefficients(vec![Zq::new(3), Zq::new(1)]),
         ];
 
         let p1 = PolyMatrix::from_vector_as_col(rhs.clone());
@@ -449,27 +449,27 @@ mod test {
             values: vec![
                 // [x+1, x-1]
                 vec![
-                    RingPolynomial::from_coefficients(vec![Fq::one(), Fq::one()]),
-                    RingPolynomial::from_coefficients(vec![Fq::one().neg(), Fq::one()]),
+                    UniPolynomial::from_coefficients(vec![Zq::one(), Zq::one()]),
+                    UniPolynomial::from_coefficients(vec![Zq::one().neg(), Zq::one()]),
                 ],
                 // [x+1, x-2]
                 vec![
-                    RingPolynomial::from_coefficients(vec![Fq::one(), Fq::one()]),
-                    RingPolynomial::from_coefficients(vec![Fq::new(2).neg(), Fq::one()]),
+                    UniPolynomial::from_coefficients(vec![Zq::one(), Zq::one()]),
+                    UniPolynomial::from_coefficients(vec![Zq::new(2).neg(), Zq::one()]),
                 ],
             ],
         };
         // [3x+1, x+3]
         let rhs = vec![
-            RingPolynomial::from_coefficients(vec![Fq::new(1), Fq::new(3)]),
-            RingPolynomial::from_coefficients(vec![Fq::new(3), Fq::new(1)]),
+            UniPolynomial::from_coefficients(vec![Zq::new(1), Zq::new(3)]),
+            UniPolynomial::from_coefficients(vec![Zq::new(3), Zq::new(1)]),
         ];
 
         let expect = vec![
             // -2 + 6x + 4x^2
-            RingPolynomial::from_coefficients(vec![Fq::new(2).neg(), Fq::new(6), Fq::new(4)]),
+            UniPolynomial::from_coefficients(vec![Zq::new(2).neg(), Zq::new(6), Zq::new(4)]),
             // (4x^2 + 5x - 5)
-            RingPolynomial::from_coefficients(vec![Fq::new(5).neg(), Fq::new(5), Fq::new(4)]),
+            UniPolynomial::from_coefficients(vec![Zq::new(5).neg(), Zq::new(5), Zq::new(4)]),
         ];
 
         let rhs = PolyMatrix::from_vector_as_col(rhs);
@@ -486,13 +486,13 @@ mod test {
             values: vec![
                 // [x+1, x-1]
                 vec![
-                    RingPolynomial::from_coefficients(vec![Fq::one(), Fq::one()]),
-                    RingPolynomial::from_coefficients(vec![Fq::one().neg(), Fq::one()]),
+                    UniPolynomial::from_coefficients(vec![Zq::one(), Zq::one()]),
+                    UniPolynomial::from_coefficients(vec![Zq::one().neg(), Zq::one()]),
                 ],
                 // [x+1, x-2]
                 vec![
-                    RingPolynomial::from_coefficients(vec![Fq::one(), Fq::one()]),
-                    RingPolynomial::from_coefficients(vec![Fq::new(2).neg(), Fq::one()]),
+                    UniPolynomial::from_coefficients(vec![Zq::one(), Zq::one()]),
+                    UniPolynomial::from_coefficients(vec![Zq::new(2).neg(), Zq::one()]),
                 ],
             ],
         };
@@ -502,13 +502,13 @@ mod test {
             values: vec![
                 // [3x+1, x+3]
                 vec![
-                    RingPolynomial::from_coefficients(vec![Fq::new(1), Fq::new(3)]),
-                    RingPolynomial::from_coefficients(vec![Fq::new(3), Fq::new(1)]),
+                    UniPolynomial::from_coefficients(vec![Zq::new(1), Zq::new(3)]),
+                    UniPolynomial::from_coefficients(vec![Zq::new(3), Zq::new(1)]),
                 ],
                 // [3x+1, x+1]
                 vec![
-                    RingPolynomial::from_coefficients(vec![Fq::new(1), Fq::new(3)]),
-                    RingPolynomial::from_coefficients(vec![Fq::new(1), Fq::new(1)]),
+                    UniPolynomial::from_coefficients(vec![Zq::new(1), Zq::new(3)]),
+                    UniPolynomial::from_coefficients(vec![Zq::new(1), Zq::new(1)]),
                 ],
             ],
         };
@@ -519,17 +519,17 @@ mod test {
             values: vec![
                 // [2x + 6x^2, 2 + 4x + 2x^2]
                 vec![
-                    RingPolynomial::from_coefficients(vec![Fq::new(0), Fq::new(2), Fq::new(6)]),
-                    RingPolynomial::from_coefficients(vec![Fq::new(2), Fq::new(4), Fq::new(2)]),
+                    UniPolynomial::from_coefficients(vec![Zq::new(0), Zq::new(2), Zq::new(6)]),
+                    UniPolynomial::from_coefficients(vec![Zq::new(2), Zq::new(4), Zq::new(2)]),
                 ],
                 // [-1 - x + 6x^2, 1 + 3x + 2x^2]
                 vec![
-                    RingPolynomial::from_coefficients(vec![
-                        Fq::new(1).neg(),
-                        Fq::new(1).neg(),
-                        Fq::new(6),
+                    UniPolynomial::from_coefficients(vec![
+                        Zq::new(1).neg(),
+                        Zq::new(1).neg(),
+                        Zq::new(6),
                     ]),
-                    RingPolynomial::from_coefficients(vec![Fq::new(1), Fq::new(3), Fq::new(2)]),
+                    UniPolynomial::from_coefficients(vec![Zq::new(1), Zq::new(3), Zq::new(2)]),
                 ],
             ],
         };
@@ -548,13 +548,13 @@ mod test {
             values: vec![
                 // [x+1, x-1]
                 vec![
-                    RingPolynomial::from_coefficients(vec![Fq::one(), Fq::one()]),
-                    RingPolynomial::from_coefficients(vec![Fq::one().neg(), Fq::one()]),
+                    UniPolynomial::from_coefficients(vec![Zq::one(), Zq::one()]),
+                    UniPolynomial::from_coefficients(vec![Zq::one().neg(), Zq::one()]),
                 ],
                 // [x+1, x-2]
                 vec![
-                    RingPolynomial::from_coefficients(vec![Fq::one(), Fq::one()]),
-                    RingPolynomial::from_coefficients(vec![Fq::new(2).neg(), Fq::one()]),
+                    UniPolynomial::from_coefficients(vec![Zq::one(), Zq::one()]),
+                    UniPolynomial::from_coefficients(vec![Zq::new(2).neg(), Zq::one()]),
                 ],
             ],
         };
@@ -564,25 +564,25 @@ mod test {
             values: vec![
                 // [3x+1, x+3]
                 vec![
-                    RingPolynomial::from_coefficients(vec![Fq::new(1), Fq::new(3)]),
-                    RingPolynomial::from_coefficients(vec![Fq::new(3), Fq::new(1)]),
+                    UniPolynomial::from_coefficients(vec![Zq::new(1), Zq::new(3)]),
+                    UniPolynomial::from_coefficients(vec![Zq::new(3), Zq::new(1)]),
                 ],
                 // [3x+1, x+1]
                 vec![
-                    RingPolynomial::from_coefficients(vec![Fq::new(1), Fq::new(3)]),
-                    RingPolynomial::from_coefficients(vec![Fq::new(1), Fq::new(1)]),
+                    UniPolynomial::from_coefficients(vec![Zq::new(1), Zq::new(3)]),
+                    UniPolynomial::from_coefficients(vec![Zq::new(1), Zq::new(1)]),
                 ],
             ],
         };
         // [3x+1, x+3]
         let x = vec![
-            RingPolynomial::from_coefficients(vec![Fq::new(1), Fq::new(3)]),
-            RingPolynomial::from_coefficients(vec![Fq::new(3), Fq::new(1)]),
+            UniPolynomial::from_coefficients(vec![Zq::new(1), Zq::new(3)]),
+            UniPolynomial::from_coefficients(vec![Zq::new(3), Zq::new(1)]),
         ];
         let x = PolyMatrix::from_vector_as_col(x);
 
         // A*B*x
-        let res1 = PolyMatrix::<RingPolynomial<Fq>>::mul_matrix(&lhs, &rhs).mul(x.clone());
+        let res1 = PolyMatrix::<UniPolynomial<Zq>>::mul_matrix(&lhs, &rhs).mul(x.clone());
         // A*(B*x)
         let res2 = lhs.mul(rhs.mul(x));
         assert_eq!(res1, res2);

@@ -1,4 +1,4 @@
-pub mod fq;
+pub mod zq;
 
 use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Display};

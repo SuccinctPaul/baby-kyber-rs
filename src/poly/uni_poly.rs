@@ -7,6 +7,7 @@ use std::ops::{Add, AddAssign, Mul, MulAssign, Sub, SubAssign};
 
 use rayon::{current_num_threads, scope};
 
+// Uni-var Polynomial
 // p(x) = = a_0 + a_1 * X + ... + a_n * X^(n-1)
 //
 //
@@ -16,11 +17,11 @@ use rayon::{current_num_threads, scope};
 //
 // It's Little Endian.
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
-pub struct RingPolynomial<R: Ring> {
+pub struct UniPolynomial<R: Ring> {
     coeffs: Vec<R>,
 }
 
-impl<R: Ring> RingPolynomial<R> {
+impl<R: Ring> UniPolynomial<R> {
     // Constructor with normalize
     pub fn new(coeffs: Vec<R>) -> Self {
         let mut poly = Self { coeffs };
@@ -74,7 +75,7 @@ impl<R: Ring> RingPolynomial<R> {
     }
 }
 
-impl<R: Ring> Polynomial for RingPolynomial<R> {
+impl<R: Ring> Polynomial for UniPolynomial<R> {
     type Coefficient = R;
 
     fn rand(rng: &mut impl rand::RngCore, degree: usize) -> Self {
@@ -208,7 +209,7 @@ impl<R: Ring> Polynomial for RingPolynomial<R> {
     }
 }
 
-impl<R: Ring> Add for RingPolynomial<R> {
+impl<R: Ring> Add for UniPolynomial<R> {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self::Output {
@@ -230,12 +231,12 @@ impl<R: Ring> Add for RingPolynomial<R> {
     }
 }
 
-impl<R: Ring> AddAssign for RingPolynomial<R> {
+impl<R: Ring> AddAssign for UniPolynomial<R> {
     fn add_assign(&mut self, rhs: Self) {
         *self = self.clone() + rhs;
     }
 }
-impl<'a, R: Ring> Add<&'a Self> for RingPolynomial<R> {
+impl<'a, R: Ring> Add<&'a Self> for UniPolynomial<R> {
     type Output = Self;
 
     fn add(self, rhs: &'a Self) -> Self::Output {
@@ -257,7 +258,7 @@ impl<'a, R: Ring> Add<&'a Self> for RingPolynomial<R> {
     }
 }
 
-impl<R: Ring> std::ops::Mul for RingPolynomial<R> {
+impl<R: Ring> std::ops::Mul for UniPolynomial<R> {
     type Output = Self;
     fn mul(self, rhs: Self) -> Self::Output {
         let mut coeffs: Vec<R> = vec![R::zero(); self.coeffs.len() + rhs.coeffs.len() - 1];
@@ -269,7 +270,7 @@ impl<R: Ring> std::ops::Mul for RingPolynomial<R> {
         Self::new(coeffs)
     }
 }
-impl<'a, R: Ring> Mul<&'a Self> for RingPolynomial<R> {
+impl<'a, R: Ring> Mul<&'a Self> for UniPolynomial<R> {
     type Output = Self;
     fn mul(self, rhs: &Self) -> Self::Output {
         let mut coeffs: Vec<R> = vec![R::zero(); self.coeffs.len() + rhs.coeffs.len() - 1];
@@ -282,13 +283,13 @@ impl<'a, R: Ring> Mul<&'a Self> for RingPolynomial<R> {
     }
 }
 
-impl<R: Ring> MulAssign for RingPolynomial<R> {
+impl<R: Ring> MulAssign for UniPolynomial<R> {
     fn mul_assign(&mut self, rhs: Self) {
         *self = self.clone() * rhs;
     }
 }
 
-impl<R: Ring> Sub for RingPolynomial<R> {
+impl<R: Ring> Sub for UniPolynomial<R> {
     type Output = Self;
 
     fn sub(self, rhs: Self) -> Self::Output {
@@ -305,7 +306,7 @@ impl<R: Ring> Sub for RingPolynomial<R> {
     }
 }
 
-impl<'a, R: Ring> Sub<&'a Self> for RingPolynomial<R> {
+impl<'a, R: Ring> Sub<&'a Self> for UniPolynomial<R> {
     type Output = Self;
     fn sub(self, rhs: &Self) -> Self::Output {
         let max_len = self.coeffs.len().max(rhs.coeffs.len());
@@ -320,18 +321,18 @@ impl<'a, R: Ring> Sub<&'a Self> for RingPolynomial<R> {
         Self::new(result)
     }
 }
-impl<R: Ring> SubAssign for RingPolynomial<R> {
+impl<R: Ring> SubAssign for UniPolynomial<R> {
     fn sub_assign(&mut self, rhs: Self) {
         *self = self.clone() - rhs;
     }
 }
-impl<'a, R: Ring> SubAssign<&'a Self> for RingPolynomial<R> {
+impl<'a, R: Ring> SubAssign<&'a Self> for UniPolynomial<R> {
     fn sub_assign(&mut self, rhs: &Self) {
         *self = self.clone() - rhs;
     }
 }
 
-impl<R: Ring> Display for RingPolynomial<R> {
+impl<R: Ring> Display for UniPolynomial<R> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         if self.coeffs.is_empty() || (self.coeffs.len() == 1 && self.coeffs[0] == R::zero()) {
             return write!(f, "0");
@@ -371,122 +372,122 @@ impl<R: Ring> Display for RingPolynomial<R> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ring::fq::Fq;
+    use crate::ring::zq::Zq;
     use std::ops::Neg;
     #[test]
     fn test_ring_polynomial_display() {
         let poly =
-            RingPolynomial::from_coefficients(vec![Fq::new(3), Fq::new(0), Fq::new(2), Fq::new(1)]);
+            UniPolynomial::from_coefficients(vec![Zq::new(3), Zq::new(0), Zq::new(2), Zq::new(1)]);
         // assert_eq!(poly.to_string(), "x^3 + 2x^2 + 3");
         println!("poly: {:?}", poly.to_string());
-        let zero_poly = RingPolynomial::<Fq>::zero();
+        let zero_poly = UniPolynomial::<Zq>::zero();
         // assert_eq!(zero_poly.to_string(), "0");
         println!("zero_poly: {:?}", zero_poly.to_string());
 
-        let linear_poly = RingPolynomial::from_coefficients(vec![Fq::new(2), Fq::new(1)]);
+        let linear_poly = UniPolynomial::from_coefficients(vec![Zq::new(2), Zq::new(1)]);
         // assert_eq!(linear_poly.to_string(), "1x + 2");
         println!("linear_poly: {:?}", linear_poly.to_string());
     }
 
     #[test]
     fn test_poly_addition() {
-        let p1 = RingPolynomial::<Fq>::from_coefficients(
-            vec![3, 2, 1].into_iter().map(Fq::from).collect(),
+        let p1 = UniPolynomial::<Zq>::from_coefficients(
+            vec![3, 2, 1].into_iter().map(Zq::from).collect(),
         ); // x^2 + 2x + 3
-        let p2 = RingPolynomial::<Fq>::from_coefficients(
-            vec![6, 5, 4].into_iter().map(Fq::from).collect(),
+        let p2 = UniPolynomial::<Zq>::from_coefficients(
+            vec![6, 5, 4].into_iter().map(Zq::from).collect(),
         ); // x^2 + 5x + 6
         let result = p1 + p2;
-        assert_eq!(result.coeffs, vec![Fq::new(9), Fq::new(7), Fq::new(5)]);
+        assert_eq!(result.coeffs, vec![Zq::new(9), Zq::new(7), Zq::new(5)]);
     }
 
     #[test]
     fn test_poly_subtraction() {
-        let p1 = RingPolynomial::<Fq>::from_coefficients(
-            vec![6, 5, 4].into_iter().map(Fq::from).collect(),
+        let p1 = UniPolynomial::<Zq>::from_coefficients(
+            vec![6, 5, 4].into_iter().map(Zq::from).collect(),
         ); // x^2 + 5x + 6
-        let p2 = RingPolynomial::<Fq>::from_coefficients(
-            vec![3, 2, 1].into_iter().map(Fq::from).collect(),
+        let p2 = UniPolynomial::<Zq>::from_coefficients(
+            vec![3, 2, 1].into_iter().map(Zq::from).collect(),
         ); // x^2 + 2x + 3
         let result = p1 - p2;
-        assert_eq!(result.coeffs, vec![Fq::new(3); 3]);
+        assert_eq!(result.coeffs, vec![Zq::new(3); 3]);
 
         //     s_tranpose_dot_u: "2x^3 + 7x^2 + 8x + 3"
         // ciphter_text.v:
         // "11x^3 + 7x^2 + x + 13"
-        let p3 = RingPolynomial::<Fq>::from_coefficients(
-            vec![13, 1, 7, 11].into_iter().map(Fq::from).collect(),
+        let p3 = UniPolynomial::<Zq>::from_coefficients(
+            vec![13, 1, 7, 11].into_iter().map(Zq::from).collect(),
         );
 
         // 2x^3 + 7x^2 + 8x + 3
-        let p4 = RingPolynomial::<Fq>::from_coefficients(
-            vec![3, 8, 7, 2].into_iter().map(Fq::from).collect(),
+        let p4 = UniPolynomial::<Zq>::from_coefficients(
+            vec![3, 8, 7, 2].into_iter().map(Zq::from).collect(),
         );
 
         let result = p3 - p4;
         println!("result: {:?}", result.to_string());
         assert_eq!(result.coeffs, vec![
-            Fq::new(10),
-            Fq::new(7).neg(),
-            Fq::zero(),
-            Fq::new(9)
+            Zq::new(10),
+            Zq::new(7).neg(),
+            Zq::zero(),
+            Zq::new(9)
         ]);
     }
 
     #[test]
     fn test_poly_multiplication() {
         let p1 =
-            RingPolynomial::<Fq>::from_coefficients(vec![1, 2].into_iter().map(Fq::from).collect()); // 2x + 1
+            UniPolynomial::<Zq>::from_coefficients(vec![1, 2].into_iter().map(Zq::from).collect()); // 2x + 1
         let p2 =
-            RingPolynomial::<Fq>::from_coefficients(vec![3, 4].into_iter().map(Fq::from).collect()); // 4x + 3
+            UniPolynomial::<Zq>::from_coefficients(vec![3, 4].into_iter().map(Zq::from).collect()); // 4x + 3
         // (2x + 1)*(4x+ 3)
         let result = p1 * p2;
-        assert_eq!(result.coeffs, vec![Fq::new(3), Fq::new(10), Fq::new(8)]);
+        assert_eq!(result.coeffs, vec![Zq::new(3), Zq::new(10), Zq::new(8)]);
     }
 
     #[test]
     fn test_poly_scalar_multiplication() {
-        let p = RingPolynomial::<Fq>::from_coefficients(
-            vec![1, 2, 3].into_iter().map(Fq::from).collect(),
+        let p = UniPolynomial::<Zq>::from_coefficients(
+            vec![1, 2, 3].into_iter().map(Zq::from).collect(),
         ); // x^2 + 2x + 3
-        let q = Fq::new(2);
+        let q = Zq::new(2);
         let result = p.scalar_mul(&q);
-        assert_eq!(result.coeffs, vec![Fq::new(2), Fq::new(4), Fq::new(6)]);
+        assert_eq!(result.coeffs, vec![Zq::new(2), Zq::new(4), Zq::new(6)]);
     }
 
     #[test]
     fn test_derivative() {
         // Test polynomial: 3x^3 + 2x^2 + x + 5
         let poly =
-            RingPolynomial::from_coefficients(vec![Fq::new(5), Fq::new(1), Fq::new(2), Fq::new(3)]);
+            UniPolynomial::from_coefficients(vec![Zq::new(5), Zq::new(1), Zq::new(2), Zq::new(3)]);
 
         // Expected derivative: 9x^2 + 4x + 1
         let expected_derivative =
-            RingPolynomial::from_coefficients(vec![Fq::new(1), Fq::new(4), Fq::new(9)]);
+            UniPolynomial::from_coefficients(vec![Zq::new(1), Zq::new(4), Zq::new(9)]);
 
         assert_eq!(poly.derivative(), expected_derivative);
 
         // Test constant polynomial
-        let constant_poly = RingPolynomial::from_coefficients(vec![Fq::new(42)]);
-        assert_eq!(constant_poly.derivative(), RingPolynomial::zero());
+        let constant_poly = UniPolynomial::from_coefficients(vec![Zq::new(42)]);
+        assert_eq!(constant_poly.derivative(), UniPolynomial::zero());
 
         // Test zero polynomial
-        let zero_poly = RingPolynomial::<Fq>::zero();
-        assert_eq!(zero_poly.derivative(), RingPolynomial::zero());
+        let zero_poly = UniPolynomial::<Zq>::zero();
+        assert_eq!(zero_poly.derivative(), UniPolynomial::zero());
     }
     #[test]
     fn test_negate() {
         // Test polynomial: 3x^2 + 2x + 1
-        let poly = RingPolynomial::from_coefficients(vec![Fq::new(1), Fq::new(2), Fq::new(3)]);
+        let poly = UniPolynomial::from_coefficients(vec![Zq::new(1), Zq::new(2), Zq::new(3)]);
 
         // Expected negation: -3x^2 - 2x - 1
         let expected_negation =
-            RingPolynomial::from_coefficients(vec![-Fq::new(1), -Fq::new(2), -Fq::new(3)]);
+            UniPolynomial::from_coefficients(vec![-Zq::new(1), -Zq::new(2), -Zq::new(3)]);
 
         assert_eq!(poly.negate(), expected_negation);
 
         // Test zero polynomial
-        let zero_poly = RingPolynomial::<Fq>::zero();
+        let zero_poly = UniPolynomial::<Zq>::zero();
         assert_eq!(zero_poly.negate(), zero_poly);
 
         // Test negation of negation
@@ -495,8 +496,8 @@ mod tests {
     #[test]
     fn test_div_rem() {
         // Define polynomials
-        let p1 = RingPolynomial::from_coefficients(vec![Fq::new(1), Fq::new(2), Fq::new(1)]); // x^2 + 2x + 1
-        let p2 = RingPolynomial::from_coefficients(vec![Fq::new(1), Fq::new(1)]); // x + 1
+        let p1 = UniPolynomial::from_coefficients(vec![Zq::new(1), Zq::new(2), Zq::new(1)]); // x^2 + 2x + 1
+        let p2 = UniPolynomial::from_coefficients(vec![Zq::new(1), Zq::new(1)]); // x + 1
 
         // Perform division
         let (quotient_opt, remainder) = p1.div_rem(&p2);
@@ -504,13 +505,13 @@ mod tests {
         // Check quotient
         assert!(quotient_opt.is_none());
         let quotient = quotient_opt.unwrap();
-        assert_eq!(quotient.coefficients(), vec![Fq::new(1), Fq::new(1)]); // x + 1
+        assert_eq!(quotient.coefficients(), vec![Zq::new(1), Zq::new(1)]); // x + 1
 
         // Check remainder
-        assert_eq!(remainder.coefficients(), vec![Fq::new(0)]); // 0
+        assert_eq!(remainder.coefficients(), vec![Zq::new(0)]); // 0
 
         // Test division by higher degree polynomial
-        let p3 = RingPolynomial::from_coefficients(vec![Fq::new(1), Fq::new(1), Fq::new(1)]); // x^2 + x + 1
+        let p3 = UniPolynomial::from_coefficients(vec![Zq::new(1), Zq::new(1), Zq::new(1)]); // x^2 + x + 1
         let (quotient_opt, remainder) = p1.div_rem(&p3);
 
         // Check quotient is None
@@ -520,7 +521,7 @@ mod tests {
         assert_eq!(remainder.coefficients(), p1.coefficients());
 
         // Test division by zero polynomial
-        let zero_poly = RingPolynomial::zero();
+        let zero_poly = UniPolynomial::zero();
         let result = std::panic::catch_unwind(|| p1.div_rem(&zero_poly));
         assert!(result.is_err());
     }
@@ -529,21 +530,21 @@ mod tests {
     fn test_poly_modulo() {
         // Dividend: x^3 + 2x^2 + 3x + 4
         let dividend =
-            RingPolynomial::from_coefficients(vec![4, 3, 2, 1].into_iter().map(Fq::from).collect());
+            UniPolynomial::from_coefficients(vec![4, 3, 2, 1].into_iter().map(Zq::from).collect());
 
         // Divisor: x^2 + 1
         let divisor =
-            RingPolynomial::from_coefficients(vec![2, 1].into_iter().map(Fq::from).collect());
+            UniPolynomial::from_coefficients(vec![2, 1].into_iter().map(Zq::from).collect());
 
         // Expected remainder: -2x + 3
         let expected_remainder =
-            RingPolynomial::from_coefficients(vec![Fq::new(2).neg(), Fq::new(3)]);
+            UniPolynomial::from_coefficients(vec![Zq::new(2).neg(), Zq::new(3)]);
 
         assert_eq!(dividend.modulo(&divisor), expected_remainder);
 
         // Test with zero remainder
         let dividend2 = dividend.clone() * &divisor;
-        assert_eq!(dividend2.div_rem(&divisor).1, RingPolynomial::zero());
+        assert_eq!(dividend2.div_rem(&divisor).1, UniPolynomial::zero());
 
         // Test with divisor of higher degree
         assert_eq!(dividend.div_rem(&dividend2).0.unwrap(), dividend);
@@ -552,86 +553,27 @@ mod tests {
     #[test]
     fn test_mul_poly() {
         // p = 1 - x
-        let p = RingPolynomial {
-            coeffs: vec![Fq::one(), Fq::one().neg()],
+        let p = UniPolynomial {
+            coeffs: vec![Zq::one(), Zq::one().neg()],
         };
         // q = 1 + x
-        let q = RingPolynomial {
-            coeffs: vec![Fq::one(), Fq::one()],
+        let q = UniPolynomial {
+            coeffs: vec![Zq::one(), Zq::one()],
         };
 
         assert_eq!(p.clone().mul(&q).coeffs, vec![
-            Fq::one(),
-            Fq::zero(),
-            Fq::one().neg()
+            Zq::one(),
+            Zq::zero(),
+            Zq::one().neg()
         ]);
 
         // add
-        assert_eq!(p.clone().add(&q).coeffs, vec![Fq::new(2), Fq::zero()]);
+        assert_eq!(p.clone().add(&q).coeffs, vec![Zq::new(2), Zq::zero()]);
 
-        // poly.mul(Fq)
-        assert_eq!(p.scalar_mul(&Fq::new(5)).coeffs, vec![
-            Fq::new(5),
-            Fq::new(5).neg()
+        // poly.mul(Zq)
+        assert_eq!(p.scalar_mul(&Zq::new(5)).coeffs, vec![
+            Zq::new(5),
+            Zq::new(5).neg()
         ]);
     }
-
-    // #[test]
-    // fn lagrange_interpolate() {
-    //     // aim: p = 1 + 2x + x^2
-    //
-    //     let domain = vec![
-    //         Fq::new(1),
-    //         Fq::new(2),
-    //         Fq::new(3),
-    //         Fq::new(4),
-    //         Fq::new(5),
-    //         Fq::new(6),
-    //         Fq::new(7),
-    //         Fq::new(8),
-    //         Fq::new(9),
-    //     ];
-    //     let evals = vec![
-    //         Fq::new(4),
-    //         Fq::new(9),
-    //         Fq::new(10),
-    //         Fq::new(19),
-    //         Fq::new(24),
-    //         Fq::new(31),
-    //         Fq::new(40),
-    //         Fq::new(51),
-    //         Fq::new(64),
-    //     ];
-    //
-    //     let poly = RingPolynomial::lagrange_interpolate(domain.clone(), evals.clone());
-    //
-    //     for (x, y) in domain.iter().zip(evals) {
-    //         assert_eq!(poly.evaluate(*x), y);
-    //     }
-    //     println!("pass");
-    // }
-
-    // #[test]
-    // fn test_div() {
-    //     // division: 2+3x+x^2 = (x+1)(x+2)
-    //     let coeffs = vec![Fq::new(2), Fq::ONE, Fq::ONE];
-    //     let division = Polynomial::from_coeffs(coeffs);
-    //
-    //     // dividor: 2+x
-    //     let coeffs = vec![Fq::new(2), Fq::ONE];
-    //     let dividor = Polynomial::from_coeffs(coeffs);
-    //
-    //     // target:
-    //     //      quotient poly: 1+x
-    //     //      remainder poly: 0
-    //     let coeffs = vec![Fq::new(2), Fq::ONE];
-    //     let target_qoutient = Polynomial::from_coeffs(coeffs);
-    //     let target_remainder = Polynomial::zero();
-    //
-    //     // division / dividor = quotient + remainder
-    //     let (actual_qoutient, actual_remainder) = division.div(dividor);
-    //
-    //     assert_eq!(actual_qoutient, target_qoutient);
-    //     assert_eq!(actual_remainder, target_remainder);
-    // }
 }

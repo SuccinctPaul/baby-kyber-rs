@@ -4,7 +4,7 @@ use crate::matrix::poly_matrix::PolyMatrix;
 use crate::matrix::ring_matrix::RingMatrix;
 use crate::matrix::vector_arithmatic::VectorArithmatic;
 use crate::poly::Polynomial;
-use crate::poly::ring_poly::RingPolynomial;
+use crate::poly::uni_poly::UniPolynomial;
 use crate::ring::Ring;
 use rand::RngCore;
 

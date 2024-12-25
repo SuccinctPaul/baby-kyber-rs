@@ -1,7 +1,7 @@
 use crate::baby_kyber::keygen::{PrivateKey, PublickKey};
 use crate::matrix::poly_matrix::PolyMatrix;
 use crate::poly::Polynomial;
-use crate::poly::ring_poly::RingPolynomial;
+use crate::poly::uni_poly::UniPolynomial;
 use crate::ring::Ring;
 use rand::RngCore;
 use std::marker::PhantomData;

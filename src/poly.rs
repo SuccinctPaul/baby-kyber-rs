@@ -3,7 +3,7 @@ use rand::RngCore;
 use std::fmt::{Debug, Display};
 use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub, SubAssign};
 
-pub mod ring_poly;
+pub mod uni_poly;
 
 pub trait Polynomial:
     Add<Output = Self>

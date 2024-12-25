@@ -226,39 +226,39 @@ mod test {
     use crate::matrix::ring_matrix::RingMatrix;
     use crate::matrix::vector_arithmatic::VectorArithmatic;
     use crate::ring::Ring;
-    use crate::ring::fq::Fq;
+    use crate::ring::zq::Zq;
 
     #[test]
     fn test_ring_matrix_new() {
-        let matrix = RingMatrix::<Fq>::new(3, 4);
+        let matrix = RingMatrix::<Zq>::new(3, 4);
         println!("{:?}", matrix);
     }
 
     #[test]
     pub fn test_matrix_mul_vector() {
-        let vec1 = vec![Fq::one(), Fq::zero(), Fq::new(3)];
-        let vec2 = vec![Fq::zero(), Fq::one(), Fq::new(2)];
+        let vec1 = vec![Zq::one(), Zq::zero(), Zq::new(3)];
+        let vec2 = vec![Zq::zero(), Zq::one(), Zq::new(2)];
         assert_eq!(
-            VectorArithmatic::<Fq>::vec_dot_mul(&vec1, &vec2),
-            Fq::new(6)
+            VectorArithmatic::<Zq>::vec_dot_mul(&vec1, &vec2),
+            Zq::new(6)
         );
 
-        let vec3 = vec![Fq::one(), Fq::one()];
-        let vec4 = vec![Fq::zero(), Fq::zero()];
+        let vec3 = vec![Zq::one(), Zq::one()];
+        let vec4 = vec![Zq::zero(), Zq::zero()];
         assert_eq!(
-            VectorArithmatic::<Fq>::vec_dot_mul(&vec3, &vec4),
-            Fq::zero()
+            VectorArithmatic::<Zq>::vec_dot_mul(&vec3, &vec4),
+            Zq::zero()
         );
     }
     #[test]
     pub fn test_matrix_identity() {
         let m = 2;
-        let vector = vec![Fq::one(), Fq::zero()];
+        let vector = vec![Zq::one(), Zq::zero()];
 
-        let matrix = RingMatrix::<Fq> {
+        let matrix = RingMatrix::<Zq> {
             rows: m,
             cols: m,
-            values: vec![vec![Fq::one(), Fq::zero()], vec![Fq::zero(), Fq::one()]],
+            values: vec![vec![Zq::one(), Zq::zero()], vec![Zq::zero(), Zq::one()]],
         };
         assert_eq!(matrix, RingMatrix::identity(m));
 
@@ -266,10 +266,10 @@ mod test {
         let len = 5;
         let vector = (0..len)
             .into_iter()
-            .map(|_| Fq::rand(rng))
+            .map(|_| Zq::rand(rng))
             .collect::<Vec<_>>();
 
-        let identity = RingMatrix::<Fq>::identity(len);
+        let identity = RingMatrix::<Zq>::identity(len);
 
         let actual = identity.mul_vector(&vector);
         assert_eq!(vector, actual);
@@ -278,21 +278,21 @@ mod test {
     #[test]
     pub fn test_matrix_transpose() {
         let m = 2;
-        let matrix = RingMatrix::<Fq> {
+        let matrix = RingMatrix::<Zq> {
             rows: m,
             cols: m,
-            values: vec![vec![Fq::one(), Fq::new(2)], vec![Fq::new(3), Fq::new(4)]],
+            values: vec![vec![Zq::one(), Zq::new(2)], vec![Zq::new(3), Zq::new(4)]],
         };
-        let transposed: RingMatrix<Fq> = matrix.transpose();
-        let expect = RingMatrix::<Fq> {
+        let transposed: RingMatrix<Zq> = matrix.transpose();
+        let expect = RingMatrix::<Zq> {
             rows: m,
             cols: m,
-            values: vec![vec![Fq::one(), Fq::new(3)], vec![Fq::new(2), Fq::new(4)]],
+            values: vec![vec![Zq::one(), Zq::new(3)], vec![Zq::new(2), Zq::new(4)]],
         };
 
         assert_eq!(transposed, expect);
 
-        let recovered: RingMatrix<Fq> = transposed.transpose();
+        let recovered: RingMatrix<Zq> = transposed.transpose();
         assert_eq!(recovered, matrix);
     }
 
@@ -301,8 +301,8 @@ mod test {
         let cols = 10;
         let rows = 20;
         let rng = &mut rand::thread_rng();
-        let lhs = RingMatrix::<Fq>::rand(rng, rows, cols);
-        let rhs = RingMatrix::<Fq>::rand(rng, rows, cols);
+        let lhs = RingMatrix::<Zq>::rand(rng, rows, cols);
+        let rhs = RingMatrix::<Zq>::rand(rng, rows, cols);
 
         let sum = lhs.clone() + rhs.clone();
 
@@ -319,20 +319,20 @@ mod test {
     #[test]
     #[should_panic(expected = "Vectors must have the same length")]
     fn test_vec_dot_mul_unequal_lengths() {
-        let vec1 = vec![Fq::one(), Fq::zero()];
-        let vec2 = vec![Fq::zero(), Fq::one(), Fq::new(2)];
-        VectorArithmatic::<Fq>::vec_dot_mul(&vec1, &vec2);
+        let vec1 = vec![Zq::one(), Zq::zero()];
+        let vec2 = vec![Zq::zero(), Zq::one(), Zq::new(2)];
+        VectorArithmatic::<Zq>::vec_dot_mul(&vec1, &vec2);
     }
     #[test]
     fn test_mul_vector() {
         let m: usize = 2;
         // | 1 0 |
         // | 0 1 |
-        let matrix = vec![vec![Fq::one(), Fq::zero()], vec![Fq::zero(), Fq::one()]];
+        let matrix = vec![vec![Zq::one(), Zq::zero()], vec![Zq::zero(), Zq::one()]];
 
-        let vector = vec![Fq::one(), Fq::zero()];
+        let vector = vec![Zq::one(), Zq::zero()];
 
-        let a = RingMatrix::<Fq> {
+        let a = RingMatrix::<Zq> {
             rows: m,
             cols: m,
             values: matrix,
@@ -345,21 +345,21 @@ mod test {
     #[test]
     #[should_panic(expected = "Matrix columns must match vector length")]
     fn test_mul_vector_mismatch() {
-        let matrix = RingMatrix::<Fq> {
+        let matrix = RingMatrix::<Zq> {
             rows: 2,
             cols: 2,
-            values: vec![vec![Fq::one(), Fq::zero()], vec![Fq::zero(), Fq::one()]],
+            values: vec![vec![Zq::one(), Zq::zero()], vec![Zq::zero(), Zq::one()]],
         };
-        let vector = vec![Fq::one()];
+        let vector = vec![Zq::one()];
         matrix.mul_vector(&vector);
     }
     #[test]
     fn test_mul_matrix() {
         let m: usize = 2;
-        let a = RingMatrix::<Fq> {
+        let a = RingMatrix::<Zq> {
             rows: m,
             cols: m,
-            values: vec![vec![Fq::one(), Fq::zero()], vec![Fq::zero(), Fq::one()]],
+            values: vec![vec![Zq::one(), Zq::zero()], vec![Zq::zero(), Zq::one()]],
         };
         let b = a.clone();
 
@@ -372,19 +372,19 @@ mod test {
     #[test]
     #[should_panic(expected = "Matrix dimensions must be compatible for multiplication")]
     fn test_mul_matrix_incompatible() {
-        let a = RingMatrix::<Fq> {
+        let a = RingMatrix::<Zq> {
             rows: 2,
             cols: 3,
-            values: vec![vec![Fq::one(), Fq::zero(), Fq::one()], vec![
-                Fq::zero(),
-                Fq::one(),
-                Fq::zero(),
+            values: vec![vec![Zq::one(), Zq::zero(), Zq::one()], vec![
+                Zq::zero(),
+                Zq::one(),
+                Zq::zero(),
             ]],
         };
-        let b = RingMatrix::<Fq> {
+        let b = RingMatrix::<Zq> {
             rows: 2,
             cols: 2,
-            values: vec![vec![Fq::one(), Fq::zero()], vec![Fq::zero(), Fq::one()]],
+            values: vec![vec![Zq::one(), Zq::zero()], vec![Zq::zero(), Zq::one()]],
         };
         a.mul_matrix(&b);
     }
@@ -393,12 +393,12 @@ mod test {
         let n = 2;
         let mut rng = rand::thread_rng();
 
-        let A = RingMatrix::<Fq>::rand(&mut rng, n, n);
-        let B = RingMatrix::<Fq>::rand(&mut rng, n, n);
-        let x = vec![Fq::new(3), Fq::new(5)];
+        let A = RingMatrix::<Zq>::rand(&mut rng, n, n);
+        let B = RingMatrix::<Zq>::rand(&mut rng, n, n);
+        let x = vec![Zq::new(3), Zq::new(5)];
 
         // A*B*x
-        let res1 = RingMatrix::<Fq>::mul_matrix(&A, &B).mul_vector(&x);
+        let res1 = RingMatrix::<Zq>::mul_matrix(&A, &B).mul_vector(&x);
         // A*(B*x)
         let res2 = A.mul_vector(&B.mul_vector(&x));
         assert_eq!(res1, res2);
