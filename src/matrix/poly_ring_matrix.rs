@@ -330,6 +330,7 @@ mod test {
         // Caculated by hand is right
         assert_eq!(
             actual,
+            // 6x + 11
             POLY_RING_TEST::from_coefficients(vec![Zq::new(11), Zq::new(6)])
         );
     }
@@ -437,10 +438,10 @@ mod test {
         ];
 
         let expect = vec![
-            // -2 + 6x + 4x^2
-            POLY_RING_TEST::from_coefficients(vec![Zq::new(2).neg(), Zq::new(6), Zq::new(4)]),
-            // (4x^2 + 5x - 5)
-            POLY_RING_TEST::from_coefficients(vec![Zq::new(5).neg(), Zq::new(5), Zq::new(4)]),
+            // x6 + 11
+            POLY_RING_TEST::from_coefficients(vec![Zq::new(11), Zq::new(6)]),
+            // (5x + 8
+            POLY_RING_TEST::from_coefficients(vec![Zq::new(8), Zq::new(5)]),
         ];
 
         let rhs = PolyMatrix::from_vector_as_col(rhs);
@@ -488,15 +489,17 @@ mod test {
             rows: m,
             cols: m,
             values: vec![
-                // [2x + 6x^2, 2 + 4x + 2x^2]
+                // [2x + 6x^2, 2 + 4x + 2x^2]     mod (x^2 + 1)
+                // => [2x - 6, 4x]
                 vec![
-                    POLY_RING_TEST::from_coefficients(vec![Zq::new(1), Zq::new(2)]),
+                    POLY_RING_TEST::from_coefficients(vec![Zq::new(6).neg(), Zq::new(2)]),
                     POLY_RING_TEST::from_coefficients(vec![Zq::new(0), Zq::new(4)]),
                 ],
-                // [-1 - x + 6x^2, 1 + 3x + 2x^2]
+                // [-1 - x + 6x^2, 1 + 3x + 2x^2] mod (x^2 + 1)
+                // => [ -1x-7, 3x-1]
                 vec![
-                    POLY_RING_TEST::from_coefficients(vec![Zq::new(10), Zq::new(16)]),
-                    POLY_RING_TEST::from_coefficients(vec![Zq::new(16), Zq::new(3)]),
+                    POLY_RING_TEST::from_coefficients(vec![Zq::new(7).neg(), Zq::new(1).neg()]),
+                    POLY_RING_TEST::from_coefficients(vec![Zq::new(1).neg(), Zq::new(3)]),
                 ],
             ],
         };
