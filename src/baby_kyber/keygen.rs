@@ -5,16 +5,16 @@ use crate::matrix::ring_matrix::RingMatrix;
 use crate::matrix::vector_arithmatic::VectorArithmatic;
 use crate::poly::Polynomial;
 use crate::poly::uni_poly::UniPolynomial;
-use crate::ring::Ring;
+use crate::ring::{PolynomialRingTrait, Ring};
 use rand::RngCore;
 
 // The private key of a Kyber key pair consists of polynomials with small coefficients
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
-pub struct PrivateKey<P: Polynomial> {
+pub struct PrivateKey<P: PolynomialRingTrait> {
     pub s: PolyMatrix<P>,
 }
 
-impl<P: Polynomial> PrivateKey<P> {
+impl<P: PolynomialRingTrait> PrivateKey<P> {
     pub fn new(rng: &mut impl rand::RngCore, dimension: usize, degree: usize) -> Self {
         let vec = small_poly_vector(rng, dimension, degree);
         let s = PolyMatrix::from_vector_as_col(vec);
@@ -27,12 +27,12 @@ impl<P: Polynomial> PrivateKey<P> {
 // 1. matrix of random polynomials `A`
 // 2. vector of polynomials `t`
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
-pub struct PublickKey<P: Polynomial> {
+pub struct PublickKey<P: PolynomialRingTrait> {
     // It's a square matrix.
     pub A: PolyMatrix<P>,
     pub t: PolyMatrix<P>,
 }
-impl<P: Polynomial> PublickKey<P> {
+impl<P: PolynomialRingTrait> PublickKey<P> {
     pub fn from_private(
         rng: &mut impl RngCore,
         dimension: usize,

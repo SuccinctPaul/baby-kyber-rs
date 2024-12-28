@@ -6,7 +6,7 @@ pub struct VectorArithmatic<R: Ring> {
 
 impl<R: Ring> VectorArithmatic<R> {
     // Dot product between two vectors.
-    pub fn vec_dot_mul(a: &Vec<R>, b: &Vec<R>) -> R {
+    pub fn inner_product(a: &Vec<R>, b: &Vec<R>) -> R {
         assert_eq!(a.len(), b.len(), "Vectors must have the same length");
 
         a.iter()
@@ -17,7 +17,7 @@ impl<R: Ring> VectorArithmatic<R> {
 
     // Mul between two vectors.
     // It's a special case of matrix mul.
-    pub fn vec_mul(a: &Vec<R>, b: &Vec<R>) -> Vec<R> {
+    pub fn vector_hadamard_product(a: &Vec<R>, b: &Vec<R>) -> Vec<R> {
         assert_eq!(a.len(), b.len(), "Vectors must have the same length");
 
         a.iter()
@@ -27,7 +27,7 @@ impl<R: Ring> VectorArithmatic<R> {
     }
 
     // Add between two vectors.
-    pub fn vec_add(a: &Vec<R>, b: &Vec<R>) -> Vec<R> {
+    pub fn vector_add(a: &Vec<R>, b: &Vec<R>) -> Vec<R> {
         assert_eq!(a.len(), b.len(), "Vectors must have the same length");
 
         a.iter()
@@ -37,7 +37,7 @@ impl<R: Ring> VectorArithmatic<R> {
     }
 
     // Add between two vectors.
-    pub fn vec_sub(a: &Vec<R>, b: &Vec<R>) -> Vec<R> {
+    pub fn vector_sub(a: &Vec<R>, b: &Vec<R>) -> Vec<R> {
         assert_eq!(a.len(), b.len(), "Vectors must have the same length");
 
         a.iter()

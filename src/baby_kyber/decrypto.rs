@@ -28,7 +28,7 @@ impl<P: Polynomial> BabyKyber<P> {
             //     println!("s_tranpose_dot_u: {:?}", p.to_string()); // okey
             // }
             // println!("ciphter_text.v: {:?}", ciphter_text.v.to_string()); // okey
-            // let s_tranpose_dot_u = PolyMatrix::vec_dot_mul(&private_key.s, &ciphter_text.u);
+            // let s_tranpose_dot_u = PolyMatrix::inner_product(&private_key.s, &ciphter_text.u);
             ciphter_text.v - s_tranpose_dot_u.values[0][0].clone()
         };
         // decrypto.m_n: "9x^3 + 10x + 10"

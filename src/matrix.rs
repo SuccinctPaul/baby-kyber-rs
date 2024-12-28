@@ -1,5 +1,6 @@
 //! https://matrixcalc.org/ helps a lot.
 pub mod poly_matrix;
+pub mod poly_ring_matrix;
 pub mod ring_matrix;
 pub mod vector_arithmatic;
 

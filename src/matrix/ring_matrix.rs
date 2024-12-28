@@ -41,7 +41,7 @@ impl<R: Ring> RingMatrix<R> {
 
         self.values
             .iter()
-            .map(|row| VectorArithmatic::vec_dot_mul(row, vector))
+            .map(|row| VectorArithmatic::inner_product(row, vector))
             .collect()
     }
 
@@ -63,7 +63,7 @@ impl<R: Ring> RingMatrix<R> {
             .map(|i| {
                 let row_i = &self.values[i];
                 (0..p)
-                    .map(|j| VectorArithmatic::vec_dot_mul(row_i, &m_b_columns[j]))
+                    .map(|j| VectorArithmatic::inner_product(row_i, &m_b_columns[j]))
                     .collect()
             })
             .collect();
@@ -239,14 +239,14 @@ mod test {
         let vec1 = vec![Zq::one(), Zq::zero(), Zq::new(3)];
         let vec2 = vec![Zq::zero(), Zq::one(), Zq::new(2)];
         assert_eq!(
-            VectorArithmatic::<Zq>::vec_dot_mul(&vec1, &vec2),
+            VectorArithmatic::<Zq>::inner_product(&vec1, &vec2),
             Zq::new(6)
         );
 
         let vec3 = vec![Zq::one(), Zq::one()];
         let vec4 = vec![Zq::zero(), Zq::zero()];
         assert_eq!(
-            VectorArithmatic::<Zq>::vec_dot_mul(&vec3, &vec4),
+            VectorArithmatic::<Zq>::inner_product(&vec3, &vec4),
             Zq::zero()
         );
     }
@@ -318,10 +318,10 @@ mod test {
 
     #[test]
     #[should_panic(expected = "Vectors must have the same length")]
-    fn test_vec_dot_mul_unequal_lengths() {
+    fn test_inner_product_unequal_lengths() {
         let vec1 = vec![Zq::one(), Zq::zero()];
         let vec2 = vec![Zq::zero(), Zq::one(), Zq::new(2)];
-        VectorArithmatic::<Zq>::vec_dot_mul(&vec1, &vec2);
+        VectorArithmatic::<Zq>::inner_product(&vec1, &vec2);
     }
     #[test]
     fn test_mul_vector() {

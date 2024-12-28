@@ -1,6 +1,7 @@
 pub mod ring_poly;
 pub mod zq;
 
+use crate::poly::Polynomial;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Display};
 use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Rem, Sub, SubAssign};
@@ -65,7 +66,36 @@ pub trait PolynomialRingTrait:
     + Eq
     + Display
 {
-    type PolyType: Add + Mul + Sub + Div + Rem + Sized + Clone;
+    type PolyType: Polynomial;
+    type PolyCoeff: Ring;
 
     fn modulus(&self) -> Self::PolyType;
+    /// Remove leading zero coefficients
+    fn normalize(&mut self);
+
+    fn rand(rng: &mut impl rand::RngCore, degree: usize) -> Self;
+
+    /// Create a zero polynomial
+    fn zero() -> Self;
+
+    /// Create a polynomial representing 1
+    // fn one() -> Self;
+
+    /// Get the degree of the polynomial
+    fn degree(&self) -> usize;
+
+    /// Set the coefficient of the x^i term
+    fn set_coefficient(&mut self, i: usize, value: Self::PolyCoeff);
+
+    /// Evaluate the polynomial at a given point
+    fn evaluate(&self, x: &Self::PolyCoeff) -> Self::PolyCoeff;
+
+    /// Create a polynomial from a list of coefficients
+    fn from_coefficients(coeffs: Vec<Self::PolyCoeff>) -> Self;
+
+    /// Get all coefficients of the polynomial
+    fn coefficients(&self) -> Vec<Self::PolyCoeff>;
+
+    /// Check if the polynomial is zero
+    fn is_zero(&self) -> bool;
 }

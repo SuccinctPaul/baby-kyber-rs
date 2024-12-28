@@ -1,9 +1,10 @@
 use crate::poly::Polynomial;
+use crate::ring::PolynomialRingTrait;
 use rand::{Rng, RngCore};
 
 // a randomizer polynomial vector
 // These polynomial vectors are freshly generated for every encryption.
-pub fn small_poly_vector<P: Polynomial>(
+pub fn small_poly_vector<P: PolynomialRingTrait>(
     rng: &mut impl RngCore,
     dimension: usize,
     degree: usize,
@@ -13,10 +14,10 @@ pub fn small_poly_vector<P: Polynomial>(
     let value = 6;
     for _ in 0..dimension {
         // TODO: optimize here to use random one.
-        s.push(P::from_coefficients(vec![
-            P::Coefficient::from(value);
+        s.push(P::from(P::PolyType::from_coefficients(vec![
+            P::PolyCoeff::from(value);
             degree
-        ]));
+        ])));
     }
     s
 }

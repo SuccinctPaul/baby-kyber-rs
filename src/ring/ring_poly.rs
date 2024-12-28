@@ -1,6 +1,8 @@
 use crate::poly::Polynomial;
+use crate::poly::uni_poly::UniPolynomial;
 use crate::ring::{PolynomialRingTrait, Ring};
 use rand::RngCore;
+use std::fmt;
 use std::fmt::{Debug, Display, Formatter};
 use std::ops::{Add, AddAssign, Mul, MulAssign, Sub, SubAssign};
 
@@ -19,6 +21,7 @@ impl<P: Polynomial, const DEGREE_BOUND: u64> PolynomialRingTrait
     for RingPolynomial<P, DEGREE_BOUND>
 {
     type PolyType = P;
+    type PolyCoeff = P::Coefficient;
 
     // x^n + 1
     fn modulus(&self) -> Self::PolyType {
@@ -31,6 +34,42 @@ impl<P: Polynomial, const DEGREE_BOUND: u64> PolynomialRingTrait
             coeffs
         };
         P::from_coefficients(coeffs)
+    }
+
+    fn normalize(&mut self) {
+        self.inner.normalize();
+    }
+
+    fn rand(rng: &mut impl RngCore, degree: usize) -> Self {
+        Self::new(P::rand(rng, degree))
+    }
+
+    fn zero() -> Self {
+        Self::new(P::zero())
+    }
+
+    fn degree(&self) -> usize {
+        self.inner.degree()
+    }
+
+    fn set_coefficient(&mut self, i: usize, value: Self::PolyCoeff) {
+        self.inner.set_coefficient(i, value);
+    }
+
+    fn evaluate(&self, x: &Self::PolyCoeff) -> Self::PolyCoeff {
+        self.inner.evaluate(x)
+    }
+
+    fn from_coefficients(coeffs: Vec<Self::PolyCoeff>) -> Self {
+        Self::new(P::from_coefficients(coeffs))
+    }
+
+    fn coefficients(&self) -> Vec<Self::PolyCoeff> {
+        self.inner.coefficients()
+    }
+
+    fn is_zero(&self) -> bool {
+        self.inner.is_zero()
     }
 }
 
@@ -107,8 +146,40 @@ impl<P: Polynomial, const DEGREE_BOUND: u64> SubAssign for RingPolynomial<P, DEG
 }
 
 impl<P: Polynomial, const DEGREE_BOUND: u64> Display for RingPolynomial<P, DEGREE_BOUND> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        self.inner.to_string();
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        if self.coefficients().is_empty()
+            || (self.coefficients().len() == 1 && self.coefficients()[0] == P::Coefficient::zero())
+        {
+            return write!(f, "0");
+        }
+
+        let mut first = true;
+        for (i, coeff) in self.coefficients().iter().enumerate().rev() {
+            if *coeff != P::Coefficient::zero() {
+                if !first {
+                    write!(f, " + ")?;
+                }
+                first = false;
+
+                match i {
+                    0 => write!(f, "{}", coeff)?,
+                    1 => {
+                        if *coeff == P::Coefficient::one() {
+                            write!(f, "x")?
+                        } else {
+                            write!(f, "{}x", coeff)?
+                        }
+                    }
+                    _ => {
+                        if *coeff == P::Coefficient::one() {
+                            write!(f, "x^{}", i)?
+                        } else {
+                            write!(f, "{}x^{}", coeff, i)?
+                        }
+                    }
+                }
+            }
+        }
         Ok(())
     }
 }
