@@ -1,4 +1,4 @@
-use crate::baby_kyber::utils::small_poly_vector;
+use crate::baby_kyber::utils::{random_poly_vector, random_small_poly_vector};
 use crate::matrix::poly_ring_matrix::PolyRingMatrix;
 use crate::ring::PolynomialRingTrait;
 use rand::RngCore;
@@ -12,7 +12,7 @@ pub struct PrivateKey<P: PolynomialRingTrait> {
 
 impl<P: PolynomialRingTrait> PrivateKey<P> {
     pub fn new(rng: &mut impl rand::RngCore, dimension: usize) -> Self {
-        let vec = small_poly_vector(rng, dimension);
+        let vec = random_small_poly_vector(rng, dimension);
         let s = PolyRingMatrix::from_col_vector(vec);
         assert_eq!(s.cols, 1, "S.cols != 1, it should be a column vector");
         Self { s }
@@ -39,7 +39,7 @@ impl<P: PolynomialRingTrait> PublickKey<P> {
         let A = Self::random_A(rng, dimension);
         // e=1*n
         let e = {
-            let vector = small_poly_vector(rng, dimension);
+            let vector = random_small_poly_vector(rng, dimension);
             PolyRingMatrix::from_col_vector(vector)
         };
 
@@ -54,7 +54,7 @@ impl<P: PolynomialRingTrait> PublickKey<P> {
     pub fn random_A(rng: &mut impl RngCore, dimension: usize) -> PolyRingMatrix<P> {
         let mut values = vec![];
         for _ in 0..dimension {
-            values.push(small_poly_vector(rng, dimension));
+            values.push(random_poly_vector(rng, dimension));
         }
 
         PolyRingMatrix {

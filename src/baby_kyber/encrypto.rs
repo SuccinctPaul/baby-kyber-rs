@@ -1,5 +1,5 @@
 use crate::baby_kyber::keygen::PublickKey;
-use crate::baby_kyber::utils::{random_poly_vector, small_poly_vector};
+use crate::baby_kyber::utils::{random_poly_vector, random_small_poly_vector};
 use crate::baby_kyber::{BabyKyber, Ciphtertexts};
 use crate::debug::debug_poly_matrix;
 use crate::matrix::Matrix;
@@ -49,10 +49,10 @@ impl<P: PolynomialRingTrait, const MATRIX_DIMENSION: usize> BabyKyber<P, MATRIX_
         // 2. generate random poly and error poly
         //      These polynomial vectors are freshly generated for every encryption.
         let (e1, e2, r) = {
-            let poly_e1 = small_poly_vector(rng, MATRIX_DIMENSION);
+            let poly_e1 = random_small_poly_vector(rng, MATRIX_DIMENSION);
             let degree = 4;
             let poly_e2 = P::from_coefficients(vec![P::PolyCoeff::one(); degree]);
-            let poly_r = small_poly_vector(rng, MATRIX_DIMENSION);
+            let poly_r = random_small_poly_vector(rng, MATRIX_DIMENSION);
 
             let r = PolyRingMatrix::from_col_vector(poly_r);
             let e1 = PolyRingMatrix::from_col_vector(poly_e1);

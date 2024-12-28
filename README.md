@@ -2,9 +2,10 @@
 
 ## Kyber
 Kyber is a post-quantum public-key encryption system. 
-Its main use case is to establish keys of symmetric-key systems in higher-level protocols like TLS, Signal or OpenPGP. it is a post-quantum system because Kyber is specifically designed to be secure even in the presence of quantum computers.
+Its main use case is to establish keys of symmetric-key systems in higher-level protocols like TLS, Signal or OpenPGP. 
+It's a post-quantum system because Kyber is specifically designed to be secure even in the presence of quantum computers.
 
-In 2021 NIST decided it is worthy of standardization.
+It's standardized by NIST as [FIPS 203](https://csrc.nist.gov/pubs/fips/203/final)
 
 
 ### BabyKyber
@@ -27,4 +28,7 @@ The MLWE problem is expected to be hard even for quantum computers, which is why
 
 
 # Reference
+* https://eprint.iacr.org/2017/634.pdf
 * https://cryptopedia.dev/posts/kyber/
+* https://csrc.nist.gov/pubs/fips/203/final
+
