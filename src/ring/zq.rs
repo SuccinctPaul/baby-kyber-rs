@@ -220,13 +220,6 @@ mod tests {
         println!("{}", lhs);
         println!("to_string: {:?}", str);
     }
-    #[test]
-    fn test_random_Zq() {
-        let mut rng = DefaultRandomSource::default();
-        let lhs = Zq::random(&mut rng);
-        let rhs = Zq::random(&mut rng);
-        assert_ne!(lhs, rhs);
-    }
 
     #[test]
     fn test_rand_Zq() {

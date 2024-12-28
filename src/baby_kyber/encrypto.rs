@@ -1,16 +1,16 @@
-use crate::baby_kyber::constant::ERROR_POLY_DEGREE;
 use crate::baby_kyber::keygen::PublickKey;
 use crate::baby_kyber::utils::{random_poly_vector, small_poly_vector};
 use crate::baby_kyber::{BabyKyber, Ciphtertexts};
+use crate::debug::debug_poly_matrix;
 use crate::matrix::Matrix;
-use crate::matrix::poly_matrix::PolyMatrix;
+use crate::matrix::poly_ring_matrix::PolyRingMatrix;
 use crate::poly::Polynomial;
-use crate::ring::Ring;
+use crate::ring::{PolynomialRingTrait, Ring};
 use crate::utils::{bits_normalize, bytes_to_le_bits};
 use rand::RngCore;
 use std::ops::Mul;
 
-impl<P: Polynomial> BabyKyber<P> {
+impl<P: PolynomialRingTrait, const MATRIX_DIMENSION: usize> BabyKyber<P, MATRIX_DIMENSION> {
     // Kyber ciphtertexts consist of those two values: (u,v)
     pub fn encrypto(
         &self,
@@ -18,7 +18,6 @@ impl<P: Polynomial> BabyKyber<P> {
         msg: u8,
         public_key: &PublickKey<P>,
     ) -> Ciphtertexts<P> {
-        println!("\n\nencrypting");
         // 1. generate msg poly
         let poly_m = {
             // 1.1 encode msg into bits
@@ -29,9 +28,9 @@ impl<P: Polynomial> BabyKyber<P> {
                 .into_iter()
                 .map(|bit| {
                     if bit {
-                        P::Coefficient::one()
+                        P::PolyCoeff::one()
                     } else {
-                        P::Coefficient::zero()
+                        P::PolyCoeff::zero()
                     }
                 })
                 .collect::<Vec<_>>();
@@ -45,18 +44,18 @@ impl<P: Polynomial> BabyKyber<P> {
                 .collect::<Vec<_>>();
             P::from_coefficients(scalared_coeffs)
         };
-        // println!("poly_m: {:?}", poly_m.to_string());
+        println!("encrypto.poly_m: {:?}", poly_m.to_string());
 
         // 2. generate random poly and error poly
         //      These polynomial vectors are freshly generated for every encryption.
         let (e1, e2, r) = {
-            let poly_e1 = small_poly_vector(rng, self.dimension, self.degree);
-            // let poly_e1 = random_poly_vector(rng, self.dimension, self.degree);
-            let poly_e2 = P::from_coefficients(vec![P::Coefficient::one(); self.degree]);
-            let poly_r = small_poly_vector(rng, self.dimension, self.degree);
+            let poly_e1 = small_poly_vector(rng, MATRIX_DIMENSION);
+            let degree = 4;
+            let poly_e2 = P::from_coefficients(vec![P::PolyCoeff::one(); degree]);
+            let poly_r = small_poly_vector(rng, MATRIX_DIMENSION);
 
-            let r = PolyMatrix::from_vector_as_col(poly_r);
-            let e1 = PolyMatrix::from_vector_as_col(poly_e1);
+            let r = PolyRingMatrix::from_col_vector(poly_r);
+            let e1 = PolyRingMatrix::from_col_vector(poly_e1);
 
             (e1, poly_e2, r)
         };
@@ -68,23 +67,22 @@ impl<P: Polynomial> BabyKyber<P> {
 
             // 3.1 comptue u=A^T * r + e1
             let u = {
-                // println!("A_transpose: {:?}", A_transpose.to_string());
-                // println!("r: {:?}", r.to_string());
-                // println!("e1: {:?}", e1.to_string());
                 let A_transpose_mul_r = A_transpose * r.clone();
-                // println!(
-                //     "A_transpose_mul_r=A^T*r: {:?}",
-                //     A_transpose_mul_r.to_string()
-                // );
                 A_transpose_mul_r + e1.clone()
             };
-            // println!("u=A^T*r+e1: {:?}", u.to_string());
 
             // 3.2 compute  v=t^T * r + e2 + m
             let v = {
                 let t_tranpose = t.transpose();
+                debug_poly_matrix("t_tranpose", &t_tranpose);
                 let t_tranpose_mul_r = t_tranpose * r.clone();
+                debug_poly_matrix("t_tranpose_mul_r", &t_tranpose_mul_r);
+                assert!(
+                    t_tranpose_mul_r.rows == t_tranpose_mul_r.cols && t_tranpose_mul_r.rows == 1,
+                    "t_tranpose_mul_r is the result of inner product of two vector"
+                );
                 let t_mul_r_plus_e2 = t_tranpose_mul_r.values[0][0].clone() + e2;
+
                 t_mul_r_plus_e2 + poly_m
             };
             (u, v)

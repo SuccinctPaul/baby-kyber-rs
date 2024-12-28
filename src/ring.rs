@@ -69,11 +69,15 @@ pub trait PolynomialRingTrait:
     type PolyType: Polynomial;
     type PolyCoeff: Ring;
 
-    fn modulus(&self) -> Self::PolyType;
+    fn modulus() -> Self::PolyType;
     /// Remove leading zero coefficients
     fn normalize(&mut self);
 
     fn rand(rng: &mut impl rand::RngCore, degree: usize) -> Self;
+
+    // generate a random PolyRing with default degree 'n', aka the bound degree.
+    // TODO: Does it need to export the BOUND_DGREE in trait?
+    fn rand_with_bound_degree(rng: &mut impl rand::RngCore) -> Self;
 
     /// Create a zero polynomial
     fn zero() -> Self;

@@ -8,23 +8,19 @@ use std::ops::{Add, AddAssign, Div, Mul, Sub};
 
 /// This defined `matrix` (rows * cols) （m × n）
 #[derive(Debug, Clone, Ord, PartialOrd, Eq, PartialEq)]
-pub struct PolyMatrix<P: PolynomialRingTrait> {
+pub struct PolyRingMatrix<P: PolynomialRingTrait> {
     pub rows: usize,
     pub cols: usize,
     pub values: Vec<Vec<P>>,
 }
 
-impl<P: PolynomialRingTrait> PolyMatrix<P> {
-    pub fn rand(
-        rng: &mut impl rand::RngCore,
-        rows: usize,
-        cols: usize,
-        poly_degree: usize,
-    ) -> Self {
+impl<P: PolynomialRingTrait> PolyRingMatrix<P> {
+    // Will generate random PolyRingMatrix with bound_degree.
+    pub fn rand(rng: &mut impl rand::RngCore, rows: usize, cols: usize) -> Self {
         let values = (0..rows)
             .map(|_| {
                 (0..cols)
-                    .map(|_| P::rand(rng, poly_degree))
+                    .map(|_| P::rand_with_bound_degree(rng))
                     .collect::<Vec<_>>()
             })
             .collect::<Vec<_>>();
@@ -41,7 +37,7 @@ impl<P: PolynomialRingTrait> PolyMatrix<P> {
             .collect::<Vec<_>>()
     }
 
-    pub fn from_vector_as_row(vector: Vec<P>) -> Self {
+    pub fn from_row_vector(vector: Vec<P>) -> Self {
         let res = Self {
             rows: 1,
             cols: vector.len(),
@@ -49,7 +45,7 @@ impl<P: PolynomialRingTrait> PolyMatrix<P> {
         };
         res
     }
-    pub fn from_vector_as_col(vector: Vec<P>) -> Self {
+    pub fn from_col_vector(vector: Vec<P>) -> Self {
         let mut matrix = Self::new(vector.len(), 1);
 
         for (row, v) in vector.into_iter().enumerate() {
@@ -131,7 +127,7 @@ impl<P: PolynomialRingTrait> PolyMatrix<P> {
     }
 }
 
-impl<P: PolynomialRingTrait> Matrix<P> for PolyMatrix<P> {
+impl<P: PolynomialRingTrait> Matrix<P> for PolyRingMatrix<P> {
     fn new(rows: usize, cols: usize) -> Self {
         Self {
             rows,
@@ -189,7 +185,7 @@ impl<P: PolynomialRingTrait> Matrix<P> for PolyMatrix<P> {
         todo!()
     }
 }
-impl<P: PolynomialRingTrait> Add for PolyMatrix<P> {
+impl<P: PolynomialRingTrait> Add for PolyRingMatrix<P> {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self::Output {
@@ -222,7 +218,7 @@ impl<P: PolynomialRingTrait> Add for PolyMatrix<P> {
     }
 }
 
-impl<P: PolynomialRingTrait> Sub for PolyMatrix<P> {
+impl<P: PolynomialRingTrait> Sub for PolyRingMatrix<P> {
     type Output = Self;
 
     fn sub(self, rhs: Self) -> Self::Output {
@@ -255,7 +251,7 @@ impl<P: PolynomialRingTrait> Sub for PolyMatrix<P> {
     }
 }
 
-impl<P: PolynomialRingTrait> Mul for PolyMatrix<P> {
+impl<P: PolynomialRingTrait> Mul for PolyRingMatrix<P> {
     type Output = Self;
 
     fn mul(self, rhs: Self) -> Self::Output {
@@ -263,7 +259,7 @@ impl<P: PolynomialRingTrait> Mul for PolyMatrix<P> {
     }
 }
 
-impl<P: PolynomialRingTrait> Display for PolyMatrix<P> {
+impl<P: PolynomialRingTrait> Display for PolyRingMatrix<P> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         if self.cols == 0 || self.rows == 0 {
             return write!(f, "Empty");
@@ -286,8 +282,9 @@ impl<P: PolynomialRingTrait> Display for PolyMatrix<P> {
 }
 #[cfg(test)]
 mod test {
+    use crate::debug::debug_poly_matrix;
     use crate::matrix::Matrix;
-    use crate::matrix::poly_ring_matrix::PolyMatrix;
+    use crate::matrix::poly_ring_matrix::PolyRingMatrix;
     use crate::poly::Polynomial;
     use crate::poly::uni_poly::UniPolynomial;
     use crate::ring::ring_poly::RingPolynomial;
@@ -299,7 +296,7 @@ mod test {
     type POLY_RING_TEST = RingPolynomial<UniPolynomial<Zq>, POLY_RING_DEGREE>;
     #[test]
     fn test_ring_matrix_new() {
-        let matrix = PolyMatrix::<POLY_RING_TEST>::new(3, 4);
+        let matrix = PolyRingMatrix::<POLY_RING_TEST>::new(3, 4);
         println!("{:?}", matrix);
         println!("{:?}", matrix.to_string());
     }
@@ -310,7 +307,7 @@ mod test {
         let vec1 = vec![POLY_RING_TEST::zero(), poly_1.clone()];
         let vec2 = vec![poly_1.clone(), POLY_RING_TEST::zero()];
         assert_eq!(
-            PolyMatrix::<POLY_RING_TEST>::inner_product(&vec1, &vec2),
+            PolyRingMatrix::<POLY_RING_TEST>::inner_product(&vec1, &vec2),
             POLY_RING_TEST::zero()
         );
 
@@ -324,8 +321,8 @@ mod test {
             POLY_RING_TEST::from_coefficients(vec![Zq::new(1), Zq::new(3)]),
             POLY_RING_TEST::from_coefficients(vec![Zq::new(3), Zq::new(1)]),
         ];
-        let actual = PolyMatrix::<POLY_RING_TEST>::inner_product(&vec3, &vec4);
-        println!("module: {:?}", POLY_RING_TEST::zero().modulus().to_string());
+        let actual = PolyRingMatrix::<POLY_RING_TEST>::inner_product(&vec3, &vec4);
+        println!("module: {:?}", POLY_RING_TEST::modulus().to_string());
         println!("actual: {:?}", actual.to_string());
         // Caculated by hand is right
         assert_eq!(
@@ -338,7 +335,7 @@ mod test {
     #[test]
     pub fn test_matrix_transpose() {
         let m = 2;
-        let matrix = PolyMatrix::<POLY_RING_TEST> {
+        let matrix = PolyRingMatrix::<POLY_RING_TEST> {
             rows: m,
             cols: m,
             values: vec![
@@ -354,8 +351,8 @@ mod test {
         };
         println!("{:?}", matrix.to_string());
 
-        let transposed: PolyMatrix<POLY_RING_TEST> = matrix.transpose();
-        let expect = PolyMatrix::<POLY_RING_TEST> {
+        let transposed: PolyRingMatrix<POLY_RING_TEST> = matrix.transpose();
+        let expect = PolyRingMatrix::<POLY_RING_TEST> {
             rows: m,
             cols: m,
             values: vec![
@@ -372,7 +369,7 @@ mod test {
 
         assert_eq!(transposed, expect);
 
-        let recovered: PolyMatrix<POLY_RING_TEST> = transposed.transpose();
+        let recovered: PolyRingMatrix<POLY_RING_TEST> = transposed.transpose();
         assert_eq!(recovered, matrix);
     }
 
@@ -382,14 +379,16 @@ mod test {
         let rows = 4;
         let degree = 4;
         let rng = &mut rand::thread_rng();
-        let lhs = PolyMatrix::<POLY_RING_TEST>::rand(rng, rows, cols, degree);
-        let rhs = PolyMatrix::<POLY_RING_TEST>::rand(rng, rows, cols, degree);
+        let lhs = PolyRingMatrix::<POLY_RING_TEST>::rand(rng, rows, cols);
+        let rhs = PolyRingMatrix::<POLY_RING_TEST>::rand(rng, rows, cols);
 
         let sum = lhs.clone() + rhs.clone();
 
         let expect_lhs = sum.clone() - rhs.clone();
         assert_eq!(expect_lhs, lhs);
         let expect_rhs = sum.clone() - lhs.clone();
+        debug_poly_matrix("expect_rhs", &expect_rhs);
+        debug_poly_matrix("rhs", &rhs);
         assert_eq!(expect_rhs, rhs);
         let expect_sum = expect_lhs.clone() + expect_rhs.clone();
         assert_eq!(expect_sum, sum);
@@ -405,8 +404,8 @@ mod test {
             POLY_RING_TEST::from_coefficients(vec![Zq::new(3), Zq::new(1)]),
         ];
 
-        let p1 = PolyMatrix::from_vector_as_col(rhs.clone());
-        let p2 = PolyMatrix::from_vector_as_row(rhs.clone());
+        let p1 = PolyRingMatrix::from_col_vector(rhs.clone());
+        let p2 = PolyRingMatrix::from_row_vector(rhs.clone());
 
         assert_eq!(p1, p2.transpose());
     }
@@ -415,7 +414,7 @@ mod test {
     fn test_matrix_mul_vector() {
         let m = 2;
         let rng = &mut rand::thread_rng();
-        let lhs = PolyMatrix {
+        let lhs = PolyRingMatrix {
             rows: m,
             cols: m,
             values: vec![
@@ -444,15 +443,15 @@ mod test {
             POLY_RING_TEST::from_coefficients(vec![Zq::new(8), Zq::new(5)]),
         ];
 
-        let rhs = PolyMatrix::from_vector_as_col(rhs);
+        let rhs = PolyRingMatrix::from_col_vector(rhs);
         let res = lhs.mul(rhs);
-        assert_eq!(PolyMatrix::from_vector_as_col(expect), res);
+        assert_eq!(PolyRingMatrix::from_col_vector(expect), res);
     }
 
     #[test]
     fn test_mul_matrix() {
         let m: usize = 2;
-        let lhs = PolyMatrix {
+        let lhs = PolyRingMatrix {
             rows: m,
             cols: m,
             values: vec![
@@ -468,7 +467,7 @@ mod test {
                 ],
             ],
         };
-        let rhs = PolyMatrix {
+        let rhs = PolyRingMatrix {
             rows: m,
             cols: m,
             values: vec![
@@ -485,7 +484,7 @@ mod test {
             ],
         };
 
-        let expect = PolyMatrix {
+        let expect = PolyRingMatrix {
             rows: m,
             cols: m,
             values: vec![
@@ -512,7 +511,7 @@ mod test {
         let m = 2;
         let mut rng = rand::thread_rng();
 
-        let lhs = PolyMatrix {
+        let lhs = PolyRingMatrix {
             rows: m,
             cols: m,
             values: vec![
@@ -528,7 +527,7 @@ mod test {
                 ],
             ],
         };
-        let rhs = PolyMatrix {
+        let rhs = PolyRingMatrix {
             rows: m,
             cols: m,
             values: vec![
@@ -549,10 +548,10 @@ mod test {
             POLY_RING_TEST::from_coefficients(vec![Zq::new(1), Zq::new(3)]),
             POLY_RING_TEST::from_coefficients(vec![Zq::new(3), Zq::new(1)]),
         ];
-        let x = PolyMatrix::from_vector_as_col(x);
+        let x = PolyRingMatrix::from_col_vector(x);
 
         // A*B*x
-        let res1 = PolyMatrix::<POLY_RING_TEST>::mul_matrix(&lhs, &rhs).mul(x.clone());
+        let res1 = PolyRingMatrix::<POLY_RING_TEST>::mul_matrix(&lhs, &rhs).mul(x.clone());
         // A*(B*x)
         let res2 = lhs.mul(rhs.mul(x));
         assert_eq!(res1, res2);

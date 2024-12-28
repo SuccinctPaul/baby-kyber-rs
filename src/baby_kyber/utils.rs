@@ -7,31 +7,55 @@ use rand::{Rng, RngCore};
 pub fn small_poly_vector<P: PolynomialRingTrait>(
     rng: &mut impl RngCore,
     dimension: usize,
-    degree: usize,
 ) -> Vec<P> {
     let mut s = vec![];
-    // let value = rng.next_u64(); ;
+    let degree = 6;
+    // let value = rng.next_u64() % 6; ;
     let value = 6;
     for _ in 0..dimension {
         // TODO: optimize here to use random one.
-        s.push(P::from(P::PolyType::from_coefficients(vec![
-            P::PolyCoeff::from(value);
-            degree
-        ])));
+        let poly = {
+            P::from_coefficients(
+                (0..degree)
+                    .map(|i| {
+                        let value = value + i as u64;
+                        P::PolyCoeff::from(value)
+                    })
+                    .collect(),
+            )
+            //     P::rand_with_bound_degree(rng)
+        };
+        println!("randomer poly: {:?}", poly.to_string());
+        s.push(poly);
     }
     s
 }
 
 // a randomizer polynomial vector
 // These polynomial vectors are freshly generated for every encryption.
-pub fn random_poly_vector<P: Polynomial>(
+pub fn random_poly_vector<P: PolynomialRingTrait>(
     rng: &mut impl RngCore,
     dimension: usize,
-    degree: usize,
 ) -> Vec<P> {
     let mut s = vec![];
+    let degree = 6;
+    // let value = rng.next_u64() % 6; ;
+    let value = 5;
     for _ in 0..dimension {
-        s.push(P::rand(rng, degree));
+        // TODO: optimize here to use random one.
+        let poly = {
+            P::from_coefficients(
+                (0..degree)
+                    .map(|i| {
+                        let value = value + i as u64;
+                        P::PolyCoeff::from(value)
+                    })
+                    .collect(),
+            )
+            //     P::rand_with_bound_degree(rng)
+        };
+        println!("randomer poly: {:?}", poly.to_string());
+        s.push(poly);
     }
     s
 }

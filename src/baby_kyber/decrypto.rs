@@ -1,18 +1,15 @@
 use crate::baby_kyber::keygen::PrivateKey;
 use crate::baby_kyber::{BabyKyber, Ciphtertexts};
 use crate::matrix::Matrix;
-use crate::matrix::poly_matrix::PolyMatrix;
 use crate::poly::Polynomial;
-use crate::ring::Ring;
+use crate::ring::{PolynomialRingTrait, Ring};
 use crate::utils::{bits_normalize, bytes_to_le_bits};
 use rand::RngCore;
 use std::ops::{Div, Sub};
 
-impl<P: Polynomial> BabyKyber<P> {
+impl<P: PolynomialRingTrait, const MATRIX_DIMENSION: usize> BabyKyber<P, MATRIX_DIMENSION> {
     // Kyber ciphtertexts consist of those two values: (u,v)
     pub fn decrypto(msg: u8, ciphter_text: Ciphtertexts<P>, private_key: &PrivateKey<P>) -> bool {
-        println!("\n\n ==start decrypto");
-
         // 1. First, we compute a noisy result m_n
         //      m_n = v - s^T * u
         let m_n = {
@@ -24,15 +21,14 @@ impl<P: Polynomial> BabyKyber<P> {
                 s_transpose
             };
             let s_tranpose_dot_u = s_tranpose * ciphter_text.u;
-            // for p in s_tranpose_dot_u.iter() {
-            //     println!("s_tranpose_dot_u: {:?}", p.to_string()); // okey
-            // }
-            // println!("ciphter_text.v: {:?}", ciphter_text.v.to_string()); // okey
-            // let s_tranpose_dot_u = PolyMatrix::inner_product(&private_key.s, &ciphter_text.u);
+            assert!(
+                s_tranpose_dot_u.rows == s_tranpose_dot_u.cols && s_tranpose_dot_u.rows == 1,
+                "s_tranpose_dot_u is the result of inner product of two vector"
+            );
             ciphter_text.v - s_tranpose_dot_u.values[0][0].clone()
         };
         // decrypto.m_n: "9x^3 + 10x + 10"
-        // println!("decrypto.m_n: {:?}", m_n.to_string());
+        println!("decrypto.m_n: {:?}", m_n.to_string());
 
         // 2. round and scalar m_n
         let scalaed_m_n = {
@@ -63,9 +59,9 @@ impl<P: Polynomial> BabyKyber<P> {
                 .into_iter()
                 .map(|bit| {
                     if bit {
-                        P::Coefficient::one()
+                        P::PolyCoeff::one()
                     } else {
-                        P::Coefficient::zero()
+                        P::PolyCoeff::zero()
                     }
                 })
                 .collect::<Vec<_>>();
@@ -79,7 +75,7 @@ impl<P: Polynomial> BabyKyber<P> {
     // Round the value
     //    closer  module/2 -> scalar
     //    closer  0 or p -> 0
-    pub fn round(coeffs: Vec<P::Coefficient>) -> Vec<P::Coefficient> {
+    pub fn round(coeffs: Vec<P::PolyCoeff>) -> Vec<P::PolyCoeff> {
         let scalar = Self::compute_scalar();
         let half_scalar = Self::compute_half_scalar();
         // println!("scalar: {:?}", scalar.to_string());
@@ -97,7 +93,7 @@ impl<P: Polynomial> BabyKyber<P> {
                     scalar.clone() - c.clone()
                 };
                 if scalar_diff > half_scalar {
-                    P::Coefficient::zero()
+                    P::PolyCoeff::zero()
                 } else {
                     scalar.clone()
                 }

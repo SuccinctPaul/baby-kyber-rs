@@ -8,11 +8,12 @@ use std::ops::{Add, AddAssign, Mul, MulAssign, Sub, SubAssign};
 
 // Z_q[x]/(x^n+1), N mean the module poly's degree
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
-pub struct RingPolynomial<P: Polynomial, const N: u64> {
+pub struct RingPolynomial<P: Polynomial, const DEGREE_BOUND: u64> {
     pub inner: P,
 }
-impl<P: Polynomial, const N: u64> RingPolynomial<P, N> {
-    pub fn new(inner: P) -> Self {
+impl<P: Polynomial, const DEGREE_BOUND: u64> RingPolynomial<P, DEGREE_BOUND> {
+    pub fn new(poly: P) -> Self {
+        let inner = poly % Self::modulus();
         Self { inner }
     }
 }
@@ -24,7 +25,7 @@ impl<P: Polynomial, const DEGREE_BOUND: u64> PolynomialRingTrait
     type PolyCoeff = P::Coefficient;
 
     // x^n + 1
-    fn modulus(&self) -> Self::PolyType {
+    fn modulus() -> Self::PolyType {
         let coeffs = if DEGREE_BOUND == 0 {
             vec![P::Coefficient::from(2)]
         } else {
@@ -43,6 +44,14 @@ impl<P: Polynomial, const DEGREE_BOUND: u64> PolynomialRingTrait
     fn rand(rng: &mut impl RngCore, degree: usize) -> Self {
         Self::new(P::rand(rng, degree))
     }
+
+    fn rand_with_bound_degree(rng: &mut impl RngCore) -> Self {
+        Self::rand(rng, DEGREE_BOUND as usize)
+    }
+
+    // fn rand_with_bound_degree(rng: &mut impl RngCore) -> Self {
+    //     Self::rand(rng, DEGREE_BOUND as usize)
+    // }
 
     fn zero() -> Self {
         Self::new(P::zero())
@@ -100,7 +109,7 @@ impl<P: Polynomial, const DEGREE_BOUND: u64> Mul for RingPolynomial<P, DEGREE_BO
 
     fn mul(self, rhs: Self) -> Self::Output {
         let product = self.inner.clone() * rhs.inner;
-        let module_one = product % self.modulus();
+        let module_one = product % Self::modulus();
         Self::new(module_one)
     }
 }
@@ -110,7 +119,7 @@ impl<'a, P: Polynomial, const DEGREE_BOUND: u64> Mul<&'a Self> for RingPolynomia
 
     fn mul(self, rhs: &'a Self) -> Self::Output {
         let product = self.inner.clone() * &rhs.inner;
-        let module_one = product % self.modulus();
+        let module_one = product % Self::modulus();
         Self::new(module_one)
     }
 }
@@ -118,7 +127,7 @@ impl<'a, P: Polynomial, const DEGREE_BOUND: u64> Mul<&'a Self> for RingPolynomia
 impl<P: Polynomial, const DEGREE_BOUND: u64> MulAssign for RingPolynomial<P, DEGREE_BOUND> {
     fn mul_assign(&mut self, rhs: Self) {
         let product = self.inner.clone() * &rhs.inner;
-        let module_one = product % self.modulus();
+        let module_one = product % Self::modulus();
         self.inner = module_one;
     }
 }

@@ -1,24 +1,20 @@
-use crate::baby_kyber::constant::ERROR_POLY_DEGREE;
 use crate::baby_kyber::utils::small_poly_vector;
-use crate::matrix::poly_matrix::PolyMatrix;
-use crate::matrix::ring_matrix::RingMatrix;
-use crate::matrix::vector_arithmatic::VectorArithmatic;
-use crate::poly::Polynomial;
-use crate::poly::uni_poly::UniPolynomial;
-use crate::ring::{PolynomialRingTrait, Ring};
+use crate::matrix::poly_ring_matrix::PolyRingMatrix;
+use crate::ring::PolynomialRingTrait;
 use rand::RngCore;
 
 // The private key of a Kyber key pair consists of polynomials with small coefficients
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub struct PrivateKey<P: PolynomialRingTrait> {
-    pub s: PolyMatrix<P>,
+    // It's a col_vector.
+    pub s: PolyRingMatrix<P>,
 }
 
 impl<P: PolynomialRingTrait> PrivateKey<P> {
-    pub fn new(rng: &mut impl rand::RngCore, dimension: usize, degree: usize) -> Self {
-        let vec = small_poly_vector(rng, dimension, degree);
-        let s = PolyMatrix::from_vector_as_col(vec);
-        assert_eq!(s.cols, 1, "S.cols != 1");
+    pub fn new(rng: &mut impl rand::RngCore, dimension: usize) -> Self {
+        let vec = small_poly_vector(rng, dimension);
+        let s = PolyRingMatrix::from_col_vector(vec);
+        assert_eq!(s.cols, 1, "S.cols != 1, it should be a column vector");
         Self { s }
     }
 }
@@ -29,37 +25,39 @@ impl<P: PolynomialRingTrait> PrivateKey<P> {
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub struct PublickKey<P: PolynomialRingTrait> {
     // It's a square matrix.
-    pub A: PolyMatrix<P>,
-    pub t: PolyMatrix<P>,
+    pub A: PolyRingMatrix<P>,
+    // It's a col_vector.
+    pub t: PolyRingMatrix<P>,
 }
 impl<P: PolynomialRingTrait> PublickKey<P> {
     pub fn from_private(
         rng: &mut impl RngCore,
         dimension: usize,
-        degree: usize,
         private_key: &PrivateKey<P>,
     ) -> Self {
-        let A = Self::random_A(rng, dimension, degree);
+        // A=n*n
+        let A = Self::random_A(rng, dimension);
+        // e=1*n
         let e = {
-            let vector = small_poly_vector(rng, dimension, degree);
-            PolyMatrix::from_vector_as_col(vector)
+            let vector = small_poly_vector(rng, dimension);
+            PolyRingMatrix::from_col_vector(vector)
         };
 
         // t= A*s + e
         let A_s = A.mul_matrix(&private_key.s);
 
         let t = A_s + e;
-        assert_eq!(t.cols, 1, "t.cols != 1");
+        assert_eq!(t.cols, 1, "cols != 1, it should be a column vector");
         Self { A, t }
     }
 
-    pub fn random_A(rng: &mut impl RngCore, dimension: usize, degree: usize) -> PolyMatrix<P> {
+    pub fn random_A(rng: &mut impl RngCore, dimension: usize) -> PolyRingMatrix<P> {
         let mut values = vec![];
         for _ in 0..dimension {
-            values.push(small_poly_vector(rng, dimension, degree));
+            values.push(small_poly_vector(rng, dimension));
         }
 
-        PolyMatrix {
+        PolyRingMatrix {
             rows: dimension,
             cols: dimension,
             values,

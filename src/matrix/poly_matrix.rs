@@ -61,7 +61,7 @@ impl<P: Polynomial> PolyMatrix<P> {
     //     res
     // }
 
-    pub fn from_vector_as_row(vector: Vec<P>) -> Self {
+    pub fn from_row_vector(vector: Vec<P>) -> Self {
         let res = Self {
             rows: 1,
             cols: vector.len(),
@@ -69,7 +69,7 @@ impl<P: Polynomial> PolyMatrix<P> {
         };
         res
     }
-    pub fn from_vector_as_col(vector: Vec<P>) -> Self {
+    pub fn from_col_vector(vector: Vec<P>) -> Self {
         let mut matrix = Self::new(vector.len(), 1);
 
         for (row, v) in vector.into_iter().enumerate() {
@@ -433,8 +433,8 @@ mod test {
             UniPolynomial::from_coefficients(vec![Zq::new(3), Zq::new(1)]),
         ];
 
-        let p1 = PolyMatrix::from_vector_as_col(rhs.clone());
-        let p2 = PolyMatrix::from_vector_as_row(rhs.clone());
+        let p1 = PolyMatrix::from_col_vector(rhs.clone());
+        let p2 = PolyMatrix::from_row_vector(rhs.clone());
 
         assert_eq!(p1, p2.transpose());
     }
@@ -472,9 +472,9 @@ mod test {
             UniPolynomial::from_coefficients(vec![Zq::new(5).neg(), Zq::new(5), Zq::new(4)]),
         ];
 
-        let rhs = PolyMatrix::from_vector_as_col(rhs);
+        let rhs = PolyMatrix::from_col_vector(rhs);
         let res = lhs.mul(rhs);
-        assert_eq!(PolyMatrix::from_vector_as_col(expect), res);
+        assert_eq!(PolyMatrix::from_col_vector(expect), res);
     }
 
     #[test]
@@ -579,7 +579,7 @@ mod test {
             UniPolynomial::from_coefficients(vec![Zq::new(1), Zq::new(3)]),
             UniPolynomial::from_coefficients(vec![Zq::new(3), Zq::new(1)]),
         ];
-        let x = PolyMatrix::from_vector_as_col(x);
+        let x = PolyMatrix::from_col_vector(x);
 
         // A*B*x
         let res1 = PolyMatrix::<UniPolynomial<Zq>>::mul_matrix(&lhs, &rhs).mul(x.clone());
